@@ -222,17 +222,24 @@ class Indi:
         self.surname = 'Unknown'
         self.gender = self.birtdate = self.birtplac = self.deatdate = self.deatplac = None
         self.chrdate = self.chrplac = self.buridate = self.buriplac = None
+        self.physical_description = self.nickname = None
         if fid and fs:
             url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '.json'
             data = fs.get_url(url)
             if data:
                 x = data['persons'][0]
-                if x['names'] and 'parts' in x['names'][0]['nameForms'][0]:
-                    for y in x['names'][0]['nameForms'][0]['parts']:
-                        if y['type'] == u'http://gedcomx.org/Given':
-                            self.given = y['value']
-                        if y['type'] == u'http://gedcomx.org/Surname':
-                            self.surname = y['value']
+                if x['names']:
+                    for y in x['names']:
+                        if y['type'] == u'http://gedcomx.org/BirthName':
+                            if 'parts' in y['nameForms'][0]:
+                                for z in y['nameForms'][0]['parts']:
+                                    if z['type'] == u'http://gedcomx.org/Given':
+                                        self.given = z['value']
+                                    if z['type'] == u'http://gedcomx.org/Surname':
+                                        self.surname = z['value']
+                        if y['type'] == u'http://gedcomx.org/Nickname':
+                            if 'parts' in y['nameForms'][0]:
+                                self.nickname = y['nameForms'][0]['parts'][0]['value']
                 if 'gender' in x:
                     if x['gender']['type'] == "http://gedcomx.org/Male":
                         self.gender = "M"
@@ -253,6 +260,8 @@ class Indi:
                     if y['type'] == u'http://gedcomx.org/Burial':
                         self.buridate = y['date']['original'] if 'date' in y and 'original' in y['date'] else None
                         self.buriplac = y['place']['original'] if 'place' in y and 'original' in y['place'] else None
+                    if y['type'] == u'http://gedcomx.org/PhysicalDescription':
+                        self.physical_description = y['value'] if 'value' in y else None
         self.parents = None
         self.children = None
         self.spouses = None
@@ -304,6 +313,8 @@ class Indi:
     def print(self, file = sys.stdout):
         file.write('0 @I' + str(self.num) + '@ INDI\n')
         file.write('1 NAME ' + self.given + ' /' + self.surname + '/\n')
+        if self.nickname:
+            file.write('2 NICK ' + self.nickname + '\n')
         if self.gender:
             file.write('1 SEX ' + self.gender + '\n')
         if self.birtdate or self.birtplac:
@@ -330,6 +341,8 @@ class Indi:
                 file.write('2 DATE ' + self.buridate + '\n')
             if self.buriplac:
                 file.write('2 PLAC ' + self.buriplac + '\n')
+        if self.physical_description:
+            file.write('1 DSCR ' + self.physical_description + '\n')
         for num in self.fams_num:
             file.write('1 FAMS @F' + str(num) + '@\n')
         for num in self.famc_num:
