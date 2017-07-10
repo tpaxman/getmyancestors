@@ -200,6 +200,33 @@ class Session:
         return data['users'][0]['personId'] if data else None
 
 
+# some GEDCOM objects
+class Fact:
+
+    def __init__(self, data=None):
+        self.value = data['value']
+        self.date = self.place = self.note = None
+        if 'date' in data:
+            self.date = data['date']['original']
+        if 'place' in data:
+            self.place = data['place']['original']
+        if 'changeMessage' in data['attribution']:
+            self.note = data['attribution']['changeMessage']
+
+class Name:
+
+    def __init__(self, data=None):
+        self.given = ''
+        self.surname = ''
+        self.note = None
+        if 'parts' in data['nameForms'][0]:
+            for z in data['nameForms'][0]['parts']:
+                if z['type'] == u'http://gedcomx.org/Given':
+                    self.given = z['value']
+                if z['type'] == u'http://gedcomx.org/Surname':
+                    self.surname = z['value']
+        if 'changeMessage' in data['attribution']:
+            self.note = data['attribution']['changeMessage']
 
 # GEDCOM individual class
 class Indi:
@@ -219,10 +246,13 @@ class Indi:
         self.famc_num = set()
         self.fams_num = set()
         self.given = ''
-        self.surname = 'Unknown'
+        self.surname = ''
         self.gender = self.birtdate = self.birtplac = self.deatdate = self.deatplac = None
         self.chrdate = self.chrplac = self.buridate = self.buriplac = None
-        self.physical_description = self.nickname = None
+        self.physical_descriptions = set()
+        self.nicknames = set()
+        self.occupations = set()
+        self.birthnames = set()
         if fid and fs:
             url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '.json'
             data = fs.get_url(url)
@@ -230,16 +260,18 @@ class Indi:
                 x = data['persons'][0]
                 if x['names']:
                     for y in x['names']:
-                        if y['type'] == u'http://gedcomx.org/BirthName':
+                        if y['preferred']:
                             if 'parts' in y['nameForms'][0]:
                                 for z in y['nameForms'][0]['parts']:
                                     if z['type'] == u'http://gedcomx.org/Given':
                                         self.given = z['value']
                                     if z['type'] == u'http://gedcomx.org/Surname':
                                         self.surname = z['value']
-                        if y['type'] == u'http://gedcomx.org/Nickname':
-                            if 'parts' in y['nameForms'][0]:
-                                self.nickname = y['nameForms'][0]['parts'][0]['value']
+                        else:
+                            if y['type'] == u'http://gedcomx.org/Nickname':
+                                self.nicknames.add(Name(y))
+                            if y['type'] == u'http://gedcomx.org/BirthName':
+                                self.birthnames.add(Name(y))
                 if 'gender' in x:
                     if x['gender']['type'] == "http://gedcomx.org/Male":
                         self.gender = "M"
@@ -261,7 +293,9 @@ class Indi:
                         self.buridate = y['date']['original'] if 'date' in y and 'original' in y['date'] else None
                         self.buriplac = y['place']['original'] if 'place' in y and 'original' in y['place'] else None
                     if y['type'] == u'http://gedcomx.org/PhysicalDescription':
-                        self.physical_description = y['value'] if 'value' in y else None
+                        self.physical_descriptions.add(Fact(y))
+                    if y['type'] == u'http://gedcomx.org/Occupation':
+                    	self.occupations.add(Fact(y))
         self.parents = None
         self.children = None
         self.spouses = None
@@ -313,8 +347,14 @@ class Indi:
     def print(self, file = sys.stdout):
         file.write('0 @I' + str(self.num) + '@ INDI\n')
         file.write('1 NAME ' + self.given + ' /' + self.surname + '/\n')
-        if self.nickname:
-            file.write('2 NICK ' + self.nickname + '\n')
+        for o in self.nicknames:
+            file.write('2 NICK ' + o.given + ' /' + o.surname + '/\n')
+            if o.note:
+                file.write('3 NOTE ' + o.note.replace('\r', '').replace('\n', '\n4 CONT ') + '\n')
+        for o in self.birthnames:
+            file.write('1 NAME ' + o.given + ' /' + o.surname + '/\n')
+            if o.note:
+                file.write('2 NOTE ' + o.note.replace('\r', '').replace('\n', '\n3 CONT ') + '\n')
         if self.gender:
             file.write('1 SEX ' + self.gender + '\n')
         if self.birtdate or self.birtplac:
@@ -341,12 +381,23 @@ class Indi:
                 file.write('2 DATE ' + self.buridate + '\n')
             if self.buriplac:
                 file.write('2 PLAC ' + self.buriplac + '\n')
-        if self.physical_description:
-            file.write('1 DSCR ' + self.physical_description + '\n')
+        for o in self.physical_descriptions:
+            file.write('1 DSCR ' + o.value + '\n')
+            if o.note:
+                file.write('2 NOTE ' + o.note.replace('\r', '').replace('\n', '\n3 CONT ') + '\n')
         for num in self.fams_num:
             file.write('1 FAMS @F' + str(num) + '@\n')
         for num in self.famc_num:
             file.write('1 FAMC @F' + str(num) + '@\n')
+        for o in self.occupations:
+            file.write('1 OCCU ' + o.value + '\n')
+            if o.date:
+                file.write('2 DATE ' + o.date + '\n')
+            if o.place:
+                file.write('2 PLAC ' + o.place + '\n')
+            if o.note:
+                file.write('2 NOTE ' + o.note.replace('\r', '').replace('\n', '\n3 CONT ') + '\n')
+
         file.write('1 _FSFTID ' + self.fid + '\n')
 
 
