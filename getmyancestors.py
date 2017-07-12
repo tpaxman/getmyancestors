@@ -20,7 +20,10 @@
 """
 
 from __future__ import print_function
-import sys, argparse, getpass, time
+import sys
+import argparse
+import getpass
+import time
 
 try:
     import requests
@@ -29,9 +32,12 @@ except ImportError:
     sys.stderr.write('(run this in your terminal: "python3 -m pip install requests" or "python3 -m pip install --user requests")\n')
     exit(2)
 
+list_notes = set() 
+
+
 # FamilySearch session class
 class Session:
-    def __init__(self, username, password, verbose = False, logfile = sys.stderr, timeout = 60):
+    def __init__(self, username, password, verbose=False, logfile=sys.stderr, timeout=60):
         self.username = username
         self.password = password
         self.verbose = verbose
@@ -46,20 +52,20 @@ class Session:
                 url = 'https://familysearch.org/auth/familysearch/login'
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
-                r = requests.get(url, params = {'ldsauth': False}, allow_redirects = False)
+                r = requests.get(url, params={'ldsauth': False}, allow_redirects=False)
 
                 url = r.headers['Location']
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
-                r = requests.get(url, allow_redirects = False)
+                r = requests.get(url, allow_redirects=False)
                 idx = r.text.index('name="params" value="')
-                span = r.text[idx+21:].index('"')
-                params = r.text[idx+21:idx+21+span]
+                span = r.text[idx + 21:].index('"')
+                params = r.text[idx + 21:idx + 21 + span]
 
                 url = 'https://ident.familysearch.org/cis-web/oauth2/v3/authorization'
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
-                r = requests.post(url, data = {'params': params, 'userName': self.username, 'password': self.password}, allow_redirects = False)
+                r = requests.post(url, data={'params': params, 'userName': self.username, 'password': self.password}, allow_redirects=False)
 
                 if 'The username or password was incorrect' in r.text:
                     if self.verbose:
@@ -75,7 +81,7 @@ class Session:
                 url = r.headers['Location']
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
-                r = requests.get(url, allow_redirects = False)
+                r = requests.get(url, allow_redirects=False)
                 self.fssessionid = r.cookies['fssessionid']
             except requests.exceptions.ReadTimeout:
                 if self.verbose:
@@ -112,10 +118,10 @@ class Session:
             if self.verbose:
                 self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
             try:
-                r = requests.get(url, params = {'ldsauth': False}, allow_redirects = False, timeout = self.timeout)
+                r = requests.get(url, params={'ldsauth': False}, allow_redirects=False, timeout=self.timeout)
                 location = r.headers['Location']
                 idx = location.index('client_id=')
-                key = location[idx+10:idx+49]
+                key = location[idx + 10:idx + 49]
             except ValueError:
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: FamilySearch developer key not found\n')
@@ -126,14 +132,14 @@ class Session:
             return key
 
     # retrieve FamilySearch session ID (https://familysearch.org/developers/docs/guides/oauth1/login)
-    def old_login(self, oldmethod = False):
+    def old_login(self, oldmethod=False):
         url = 'https://api.familysearch.org/identity/v2/login'
-        data = {'key' : self.key, 'username' : self.username, 'password' : self.password}
+        data = {'key': self.key, 'username': self.username, 'password': self.password}
         while True:
             if self.verbose:
                 self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
             try:
-                r = requests.post(url, data, timeout = self.timeout)
+                r = requests.post(url, data, timeout=self.timeout)
             except requests.exceptions.ReadTimeout:
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Read timed out\n')
@@ -167,7 +173,7 @@ class Session:
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
                 # r = requests.get(url, cookies = { 's_vi': self.s_vi, 'fssessionid' : self.fssessionid }, timeout = self.timeout)
-                r = requests.get(url, cookies = { 'fssessionid' : self.fssessionid }, timeout = self.timeout)
+                r = requests.get(url, cookies={'fssessionid': self.fssessionid}, timeout=self.timeout)
             except requests.exceptions.ReadTimeout:
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Read timed out\n')
@@ -192,7 +198,7 @@ class Session:
                 time.sleep(self.timeout)
                 continue
             return r.json()
-    
+
     # retrieve FamilySearch current user ID
     def get_userid(self):
         url = 'https://familysearch.org/platform/users/current.json'
@@ -201,6 +207,26 @@ class Session:
 
 
 # some GEDCOM objects
+class Note:
+
+    counter = 0
+
+    def __init__(self, text, num=None):
+        if num:
+            self.num = num
+        else:
+            Note.counter += 1
+            self.num = Note.counter
+        self.text = text
+        list_notes.add(self)
+
+    def print(self, file=sys.stdout):
+        file.write('0 @N' + str(self.num) + '@ NOTE ' + self.text.replace('\n', '\n1 CONT ') + '\n')
+
+    def link(self, file=sys.stdout, level=1):
+        file.write(str(level) + ' NOTE @N' + str(self.num) + '@\n')
+
+
 class Fact:
 
     def __init__(self, data=None):
@@ -211,7 +237,8 @@ class Fact:
         if 'place' in data:
             self.place = data['place']['original']
         if 'changeMessage' in data['attribution']:
-            self.note = data['attribution']['changeMessage']
+            self.note = Note(data['attribution']['changeMessage'])
+
 
 class Name:
 
@@ -226,7 +253,8 @@ class Name:
                 if z['type'] == u'http://gedcomx.org/Surname':
                     self.surname = z['value']
         if 'changeMessage' in data['attribution']:
-            self.note = data['attribution']['changeMessage']
+            self.note = Note(data['attribution']['changeMessage'])
+
 
 # GEDCOM individual class
 class Indi:
@@ -234,7 +262,7 @@ class Indi:
     counter = 0
 
     # initialize individual
-    def __init__(self, fid = None, fs = None, num = None):
+    def __init__(self, fid=None, fs=None, num=None):
         if num:
             self.num = num
         else:
@@ -253,6 +281,7 @@ class Indi:
         self.nicknames = set()
         self.occupations = set()
         self.birthnames = set()
+        self.notes = set()
         if fid and fs:
             url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '.json'
             data = fs.get_url(url)
@@ -279,6 +308,10 @@ class Indi:
                         self.gender = "F"
                 else:
                     self.gender = None
+                notes = fs.get_url(x['links']['notes']['href'])
+                if notes:
+                    for n in notes['persons'][0]['notes']:
+                        self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
                 for y in x['facts']:
                     if y['type'] == u'http://gedcomx.org/Birth':
                         self.birtdate = y['date']['original'] if 'date' in y and 'original' in y['date'] else None
@@ -295,19 +328,19 @@ class Indi:
                     if y['type'] == u'http://gedcomx.org/PhysicalDescription':
                         self.physical_descriptions.add(Fact(y))
                     if y['type'] == u'http://gedcomx.org/Occupation':
-                    	self.occupations.add(Fact(y))
+                        self.occupations.add(Fact(y))
         self.parents = None
         self.children = None
         self.spouses = None
 
     # add a fams to the individual
     def add_fams(self, fams):
-        if not fams in self.fams_fid:
+        if fams not in self.fams_fid:
             self.fams_fid.add(fams)
 
     # add a famc to the individual
     def add_famc(self, famc):
-        if not famc in self.famc_fid:
+        if famc not in self.famc_fid:
             self.famc_fid.add(famc)
 
     # retrieve parents
@@ -344,17 +377,17 @@ class Indi:
         return self.spouses
 
     # print individual information in GEDCOM format
-    def print(self, file = sys.stdout):
+    def print(self, file=sys.stdout):
         file.write('0 @I' + str(self.num) + '@ INDI\n')
         file.write('1 NAME ' + self.given + ' /' + self.surname + '/\n')
         for o in self.nicknames:
             file.write('2 NICK ' + o.given + ' /' + o.surname + '/\n')
             if o.note:
-                file.write('3 NOTE ' + o.note.replace('\r', '').replace('\n', '\n4 CONT ') + '\n')
+                o.note.link(file, 3)
         for o in self.birthnames:
             file.write('1 NAME ' + o.given + ' /' + o.surname + '/\n')
             if o.note:
-                file.write('2 NOTE ' + o.note.replace('\r', '').replace('\n', '\n3 CONT ') + '\n')
+                o.note.link(file, 2)
         if self.gender:
             file.write('1 SEX ' + self.gender + '\n')
         if self.birtdate or self.birtplac:
@@ -384,7 +417,7 @@ class Indi:
         for o in self.physical_descriptions:
             file.write('1 DSCR ' + o.value + '\n')
             if o.note:
-                file.write('2 NOTE ' + o.note.replace('\r', '').replace('\n', '\n3 CONT ') + '\n')
+                o.note.link(file, 2)
         for num in self.fams_num:
             file.write('1 FAMS @F' + str(num) + '@\n')
         for num in self.famc_num:
@@ -396,10 +429,10 @@ class Indi:
             if o.place:
                 file.write('2 PLAC ' + o.place + '\n')
             if o.note:
-                file.write('2 NOTE ' + o.note.replace('\r', '').replace('\n', '\n3 CONT ') + '\n')
-
+                o.note.link(file, 2)
         file.write('1 _FSFTID ' + self.fid + '\n')
-
+        for o in self.notes:
+            o.link(file)
 
 
 # GEDCOM family class
@@ -407,7 +440,7 @@ class Fam:
     counter = 0
 
     # initialize family
-    def __init__(self, husb = None, wife = None, num = None):
+    def __init__(self, husb=None, wife=None, num=None):
         if num:
             self.num = num
         else:
@@ -421,7 +454,7 @@ class Fam:
 
     # add a child to the family
     def add_child(self, child):
-        if not child in self.chil_fid:
+        if child not in self.chil_fid:
             self.chil_fid.add(child)
 
     # retrieve and add marriage information
@@ -438,7 +471,7 @@ class Fam:
                 self.marrdate = self.marrplac = None
 
     # print family information in GEDCOM format
-    def print(self, file = sys.stdout):
+    def print(self, file=sys.stdout):
         file.write('0 @F' + str(self.num) + '@ FAM\n')
         if self.husb_num:
             file.write('1 HUSB @I' + str(self.husb_num) + '@\n')
@@ -456,17 +489,16 @@ class Fam:
             file.write('1 _FSFTID ' + self.fid + '\n')
 
 
-
 # family tree class
 class Tree:
-    def __init__(self, fs = None):
+    def __init__(self, fs=None):
         self.fs = fs
         self.indi = dict()
         self.fam = dict()
 
     # add individual to the family tree
     def add_indi(self, fid):
-        if fid and not fid in self.indi:
+        if fid and fid not in self.indi:
             self.indi[fid] = Indi(fid, self.fs)
 
     # add family to the family tree
@@ -526,36 +558,39 @@ class Tree:
             self.indi[fid].fams_num = set([self.fam[(husb, wife)].num for husb, wife in self.indi[fid].fams_fid])
 
     # print GEDCOM file
-    def print(self, file = sys.stdout):
+    def print(self, file=sys.stdout):
         file.write('0 HEAD\n')
         file.write('1 CHAR UTF-8\n')
         file.write('1 GEDC\n')
         file.write('2 VERS 5.5\n')
         file.write('2 FORM LINEAGE-LINKED\n')
-        for fid in sorted(self.indi, key = lambda x: self.indi.__getitem__(x).num):
+        for fid in sorted(self.indi, key=lambda x: self.indi.__getitem__(x).num):
             self.indi[fid].print(file)
-        for husb, wife in sorted(self.fam, key = lambda x: self.fam.__getitem__(x).num):
+        for husb, wife in sorted(self.fam, key=lambda x: self.fam.__getitem__(x).num):
             self.fam[(husb, wife)].print(file)
+        for n in list_notes:
+            n.print(file)
         file.write('0 TRLR\n')
 
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description = 'Retrieve GEDCOM data from FamilySearch Tree (4 Jul 2016)', add_help = False, usage = 'getmyancestors.py -u username -p password [options]')
-    parser.add_argument('-u', metavar = '<STR>', type = str, help = 'FamilySearch username')
-    parser.add_argument('-p', metavar = '<STR>', type = str, help = 'FamilySearch password')
-    parser.add_argument('-i', metavar = '<STR>', nargs='+', type = str, help = 'List of individual FamilySearch IDs for whom to retrieve ancestors')
-    parser.add_argument('-a', metavar = '<INT>', type = int, default = 4, help = 'Number of generations to ascend [4]')
-    parser.add_argument('-d', metavar = '<INT>', type = int, default = 0, help = 'Number of generations to descend [0]')
-    parser.add_argument('-m', action = "store_true", default = False, help = 'Add spouses and couples information [False]')
-    parser.add_argument("-v", action = "store_true", default = False, help = "Increase output verbosity [False]")
-    parser.add_argument('-t', metavar = '<INT>', type = int, default = 60, help = 'Timeout in seconds [60]')
+    parser = argparse.ArgumentParser(description='Retrieve GEDCOM data from FamilySearch Tree (4 Jul 2016)', add_help=False, usage='getmyancestors.py -u username -p password [options]')
+    parser.add_argument('-u', metavar='<STR>', type=str, help='FamilySearch username')
+    parser.add_argument('-p', metavar='<STR>', type=str, help='FamilySearch password')
+    parser.add_argument('-i', metavar='<STR>', nargs='+', type=str, help='List of individual FamilySearch IDs for whom to retrieve ancestors')
+    parser.add_argument('-a', metavar='<INT>', type=int, default=4, help='Number of generations to ascend [4]')
+    parser.add_argument('-d', metavar='<INT>', type=int, default=0, help='Number of generations to descend [0]')
+    parser.add_argument('-m', action="store_true", default=False, help='Add spouses and couples information [False]')
+    parser.add_argument("-v", action="store_true", default=False, help="Increase output verbosity [False]")
+    parser.add_argument('-t', metavar='<INT>', type=int, default=60, help='Timeout in seconds [60]')
     try:
-        parser.add_argument('-o', metavar = '<FILE>', type = argparse.FileType('w', encoding = 'UTF-8'), default = sys.stdout, help = 'output GEDCOM file [stdout]')
-        parser.add_argument('-l', metavar = '<FILE>', type = argparse.FileType('w', encoding = 'UTF-8'), default = sys.stderr, help = 'output log file [stderr]')
+        parser.add_argument('-o', metavar='<FILE>', type=argparse.FileType('w', encoding='UTF-8'), default=sys.stdout, help='output GEDCOM file [stdout]')
+        parser.add_argument('-l', metavar='<FILE>', type=argparse.FileType('w', encoding='UTF-8'), default=sys.stderr, help='output log file [stderr]')
     except TypeError:
         sys.stderr.write('Python >= 3.4 is required to run this script\n')
         sys.stderr.write('(see https://docs.python.org/3/whatsnew/3.4.html#argparse)\n')
         exit(2)
-    
+
     # extract arguments from the command line
     try:
         parser.error = parser.exit
@@ -566,7 +601,7 @@ if __name__ == '__main__':
 
     username = args.u if args.u else input("Enter FamilySearch username: ")
     password = args.p if args.p else getpass.getpass("Enter FamilySearch password: ")
-    
+
     # initialize a FamilySearch session and a family tree object
     fs = Session(username, password, args.v, args.l, args.t)
     tree = Tree(fs)
