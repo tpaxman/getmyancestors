@@ -33,6 +33,7 @@ except ImportError:
     exit(2)
 
 list_notes = set() 
+list_sources = set()
 
 
 # FamilySearch session class
@@ -217,14 +218,57 @@ class Note:
         else:
             Note.counter += 1
             self.num = Note.counter
-        self.text = text
         list_notes.add(self)
+
+        self.text = text
 
     def print(self, file=sys.stdout):
         file.write('0 @N' + str(self.num) + '@ NOTE ' + self.text.replace('\n', '\n1 CONT ') + '\n')
 
     def link(self, file=sys.stdout, level=1):
         file.write(str(level) + ' NOTE @N' + str(self.num) + '@\n')
+
+
+class Source:
+
+    counter = 0
+
+    def __init__(self, data, num=None):
+        if num:
+            self.num = num
+        else:
+            Source.counter += 1
+            self.num = Source.counter
+        list_sources.add(self)
+
+        self.url = self.citation = self.title = None
+        self.notes = set()
+
+        x = data['sourceDescriptions'][0]
+        self.id = x['id']
+        if x['about']:
+            self.url = x['about']
+        if x['citations']:
+            self.citation = x['citations'][0]['value']
+        if x['titles']:
+            self.title = x['titles'][0]['value']
+        if x['notes']:
+            for n in x['notes']:
+                self.notes.add(Note(n['text']))
+
+    def print(self, file=sys.stdout):
+        file.write('0 @S' + str(self.num) + '@ SOUR \n')
+        if self.title:
+            file.write('1 TITL ' + self.title + '\n')
+        if self.citation:
+            file.write('1 AUTH ' + self.citation + '\n')
+        if self.url:
+            file.write('1 PUBL ' + self.url + '\n')
+        for n in self.notes:
+            n.link(file, 1)
+
+    def link(self, file=sys.stdout, level=1):
+        file.write(str(level) + ' SOUR @S' + str(self.num) + '@\n')
 
 
 class Fact:
@@ -301,6 +345,7 @@ class Indi:
         self.married = set()
         self.aka = set()
         self.notes = set()
+        self.sources = set()
         if fid and fs:
             url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '.json'
             data = fs.get_url(url)
@@ -347,6 +392,11 @@ class Indi:
                         self.physical_descriptions.add(Fact(y))
                     if y['type'] == u'http://gedcomx.org/Occupation':
                         self.occupations.add(Fact(y))
+                for y in x['sources']:
+                    if 'changeMessage' in y['attribution']:
+                        self.sources.add((Source(fs.get_url(y['links']['description']['href'])), y['attribution']['changeMessage']))
+                    else:
+                        self.sources.add((Source(fs.get_url(y['links']['description']['href'])),))
         self.parents = None
         self.children = None
         self.spouses = None
@@ -451,6 +501,10 @@ class Indi:
         file.write('1 _FSFTID ' + self.fid + '\n')
         for o in self.notes:
             o.link(file)
+        for o in self.sources:
+            o[0].link(file, 1)
+            if len(o) > 1:
+                file.write('2 PAGE ' + o[1] + '\n')
 
 
 # GEDCOM family class
@@ -588,6 +642,8 @@ class Tree:
             self.fam[(husb, wife)].print(file)
         for n in list_notes:
             n.print(file)
+        for s in list_sources:
+            s.print(file)
         file.write('0 TRLR\n')
 
 
