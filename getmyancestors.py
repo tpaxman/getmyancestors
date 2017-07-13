@@ -244,16 +244,15 @@ class Source:
         self.url = self.citation = self.title = None
         self.notes = set()
 
-        x = data['sourceDescriptions'][0]
-        self.id = x['id']
-        if x['about']:
-            self.url = x['about']
-        if x['citations']:
-            self.citation = x['citations'][0]['value']
-        if x['titles']:
-            self.title = x['titles'][0]['value']
-        if x['notes']:
-            for n in x['notes']:
+        self.id = data['id']
+        if data['about']:
+            self.url = data['about']
+        if data['citations']:
+            self.citation = data['citations'][0]['value']
+        if data['titles']:
+            self.title = data['titles'][0]['value']
+        if data['notes']:
+            for n in data['notes']:
                 self.notes.add(Note(n['text']))
 
     def print(self, file=sys.stdout):
@@ -393,10 +392,19 @@ class Indi:
                     if y['type'] == u'http://gedcomx.org/Occupation':
                         self.occupations.add(Fact(y))
                 for y in x['sources']:
-                    if 'changeMessage' in y['attribution']:
-                        self.sources.add((Source(fs.get_url(y['links']['description']['href'])), y['attribution']['changeMessage']))
+                    data = fs.get_url(y['links']['description']['href'])['sourceDescriptions'][0]
+                    source = None
+                    for s in list_sources:
+                        if s.id == data['id']:
+                            source = s
+                            break
+                    if source:
+                        self.sources.add(source)
                     else:
-                        self.sources.add((Source(fs.get_url(y['links']['description']['href'])),))
+                        if 'changeMessage' in y['attribution']:
+                            self.sources.add((Source(data), y['attribution']['changeMessage']))
+                        else:
+                            self.sources.add((Source(data),))
         self.parents = None
         self.children = None
         self.spouses = None
