@@ -253,7 +253,8 @@ class Source:
             self.title = data['titles'][0]['value']
         if data['notes']:
             for n in data['notes']:
-                self.notes.add(Note(n['text']))
+                if n['text']:
+                    self.notes.add(Note(n['text']))
 
     def print(self, file=sys.stdout):
         file.write('0 @S' + str(self.num) + '@ SOUR \n')
@@ -391,21 +392,22 @@ class Indi:
                         self.physical_descriptions.add(Fact(y))
                     if y['type'] == u'http://gedcomx.org/Occupation':
                         self.occupations.add(Fact(y))
-                for y in x['sources']:
-                    data = fs.get_url(y['links']['description']['href'])['sourceDescriptions'][0]
-                    source = None
-                    for s in list_sources:
-                        if s.id == data['id']:
-                            source = s
-                            break
-                    if source:
-                        self.sources.add(source)
-                    else:
-                        if 'changeMessage' in y['attribution']:
-                            self.sources.add((Source(data), y['attribution']['changeMessage']))
+                if 'sources' in x:
+                    for y in x['sources']:
+                        json = fs.get_url(y['links']['description']['href'])['sourceDescriptions'][0]
+                        source = None
+                        for s in list_sources:
+                            if s.id == json['id']:
+                                source = s
+                                break
+                        if source:
+                            self.sources.add(source)
                         else:
-                            self.sources.add((Source(data),))
-        self.parents = None
+                            if 'changeMessage' in y['attribution']:
+                                self.sources.add((Source(json), y['attribution']['changeMessage']))
+                            else:
+                                self.sources.add((Source(json),))
+            self.parents = None
         self.children = None
         self.spouses = None
 
@@ -531,6 +533,7 @@ class Fam:
         self.husb_num = self.wife_num = self.fid = self.marrdate = self.marrplac = None
         self.chil_fid = set()
         self.chil_num = set()
+        self.sources = set()
 
     # add a child to the family
     def add_child(self, child):
@@ -549,6 +552,21 @@ class Fam:
                 self.marrplac = x['place']['original'] if 'place' in x and 'original' in x['place'] else None
             else:
                 self.marrdate = self.marrplac = None
+            if data and 'sources' in data['relationships'][0]:
+                for y in data['relationships'][0]['sources']:
+                    json = fs.get_url(y['links']['description']['href'])['sourceDescriptions'][0]
+                    source = None
+                    for s in list_sources:
+                        if s.id == json['id']:
+                            source = s
+                            break
+                    if source:
+                        self.sources.add(source)
+                    else:
+                        if 'changeMessage' in y['attribution']:
+                            self.sources.add((Source(json), y['attribution']['changeMessage']))
+                        else:
+                            self.sources.add((Source(json),))
 
     # print family information in GEDCOM format
     def print(self, file=sys.stdout):
@@ -567,7 +585,10 @@ class Fam:
                 file.write('2 PLAC ' + self.marrplac + '\n')
         if self.fid:
             file.write('1 _FSFTID ' + self.fid + '\n')
-
+        for o in self.sources:
+            o[0].link(file, 1)
+            if len(o) > 1:
+                file.write('2 PAGE ' + o[1] + '\n')
 
 # family tree class
 class Tree:
@@ -723,3 +744,4 @@ if __name__ == '__main__':
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
     tree.print(args.o)
+ 
