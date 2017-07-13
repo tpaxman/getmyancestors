@@ -245,6 +245,8 @@ class Name:
     def __init__(self, data=None):
         self.given = ''
         self.surname = ''
+        self.prefix = None
+        self.suffix = None
         self.note = None
         if 'parts' in data['nameForms'][0]:
             for z in data['nameForms'][0]['parts']:
@@ -252,8 +254,24 @@ class Name:
                     self.given = z['value']
                 if z['type'] == u'http://gedcomx.org/Surname':
                     self.surname = z['value']
+                if z['type'] == u'http://gedcomx.org/Prefix':
+                    self.prefix = z['value']
+                if z['type'] == u'http://gedcomx.org/Suffix':
+                    self.suffix = z['value']
         if 'changeMessage' in data['attribution']:
             self.note = Note(data['attribution']['changeMessage'])
+
+    def print(self, file=sys.stdout, type=None):
+        file.write('1 NAME ' + self.given + ' /' + self.surname + '/')
+        if self.suffix:
+            file.write(' ' + self.suffix)
+        file.write('\n')
+        if type:
+            file.write('2 TYPE ' + type + '\n')
+        if self.prefix:
+            file.write('2 NPFX ' + self.prefix + '\n')
+        if self.note:
+            self.note.link(file, 2)
 
 
 # GEDCOM individual class
@@ -273,14 +291,15 @@ class Indi:
         self.fams_fid = set()
         self.famc_num = set()
         self.fams_num = set()
-        self.given = ''
-        self.surname = ''
+        self.name = None
         self.gender = self.birtdate = self.birtplac = self.deatdate = self.deatplac = None
         self.chrdate = self.chrplac = self.buridate = self.buriplac = None
         self.physical_descriptions = set()
         self.nicknames = set()
         self.occupations = set()
         self.birthnames = set()
+        self.married = set()
+        self.aka = set()
         self.notes = set()
         if fid and fs:
             url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '.json'
@@ -290,17 +309,16 @@ class Indi:
                 if x['names']:
                     for y in x['names']:
                         if y['preferred']:
-                            if 'parts' in y['nameForms'][0]:
-                                for z in y['nameForms'][0]['parts']:
-                                    if z['type'] == u'http://gedcomx.org/Given':
-                                        self.given = z['value']
-                                    if z['type'] == u'http://gedcomx.org/Surname':
-                                        self.surname = z['value']
+                            self.name = Name(y)
                         else:
                             if y['type'] == u'http://gedcomx.org/Nickname':
                                 self.nicknames.add(Name(y))
                             if y['type'] == u'http://gedcomx.org/BirthName':
                                 self.birthnames.add(Name(y))
+                            if y['type'] == u'http://gedcomx.org/AlsoKnownAs':
+                                self.aka.add(Name(y))
+                            if y['type'] == u'http://gedcomx.org/MarriedName':
+                                self.married.add(Name(y))
                 if 'gender' in x:
                     if x['gender']['type'] == "http://gedcomx.org/Male":
                         self.gender = "M"
@@ -379,15 +397,15 @@ class Indi:
     # print individual information in GEDCOM format
     def print(self, file=sys.stdout):
         file.write('0 @I' + str(self.num) + '@ INDI\n')
-        file.write('1 NAME ' + self.given + ' /' + self.surname + '/\n')
+        self.name.print(file)
         for o in self.nicknames:
-            file.write('2 NICK ' + o.given + ' /' + o.surname + '/\n')
-            if o.note:
-                o.note.link(file, 3)
+            file.write('2 NICK ' + o.given + ' /' + o .surname + '/\n')
         for o in self.birthnames:
-            file.write('1 NAME ' + o.given + ' /' + o.surname + '/\n')
-            if o.note:
-                o.note.link(file, 2)
+            o.print(file)
+        for o in self.aka:
+            o.print(file, 'aka')
+        for o in self.married:
+            o.print(file, 'married')
         if self.gender:
             file.write('1 SEX ' + self.gender + '\n')
         if self.birtdate or self.birtplac:
