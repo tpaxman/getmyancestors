@@ -32,7 +32,7 @@ except ImportError:
     sys.stderr.write('(run this in your terminal: "python3 -m pip install requests" or "python3 -m pip install --user requests")\n')
     exit(2)
 
-list_notes = set() 
+list_notes = set()
 list_sources = set()
 
 
@@ -212,7 +212,7 @@ class Note:
 
     counter = 0
 
-    def __init__(self, text, num=None):
+    def __init__(self, text='', num=None):
         if num:
             self.num = num
         else:
@@ -233,7 +233,7 @@ class Source:
 
     counter = 0
 
-    def __init__(self, data, num=None):
+    def __init__(self, data=None, num=None):
         if num:
             self.num = num
         else:
@@ -241,20 +241,28 @@ class Source:
             self.num = Source.counter
         list_sources.add(self)
 
-        self.url = self.citation = self.title = None
+        self.url = self.citation = self.title = self.fid = None
         self.notes = set()
 
-        self.id = data['id']
-        if data['about']:
-            self.url = data['about']
-        if data['citations']:
-            self.citation = data['citations'][0]['value']
-        if data['titles']:
-            self.title = data['titles'][0]['value']
-        if data['notes']:
-            for n in data['notes']:
-                if n['text']:
-                    self.notes.add(Note(n['text']))
+        if data:
+            self.fid = data['id']
+            if data['about']:
+                self.url = data['about']
+            if data['citations']:
+                self.citation = data['citations'][0]['value']
+            if data['titles']:
+                self.title = data['titles'][0]['value']
+            if data['notes']:
+                for n in data['notes']:
+                    if n['text']:
+                        self.notes.add(Note(n['text'], fid=n['id']))
+
+    def add_source(data=None):
+        if data:
+            for s in list_sources:
+                if s.fid == data[fid]:
+                    return s
+            return Source(data)
 
     def print(self, file=sys.stdout):
         file.write('0 @S' + str(self.num) + '@ SOUR \n')
@@ -266,6 +274,7 @@ class Source:
             file.write('1 PUBL ' + self.url + '\n')
         for n in self.notes:
             n.link(file, 1)
+        file.write('1 _FSFTID ' + self.fid + '\n')
 
     def link(self, file=sys.stdout, level=1):
         file.write(str(level) + ' SOUR @S' + str(self.num) + '@\n')
@@ -274,14 +283,16 @@ class Source:
 class Fact:
 
     def __init__(self, data=None):
-        self.value = data['value']
+        self.value = ''
         self.date = self.place = self.note = None
-        if 'date' in data:
-            self.date = data['date']['original']
-        if 'place' in data:
-            self.place = data['place']['original']
-        if 'changeMessage' in data['attribution']:
-            self.note = Note(data['attribution']['changeMessage'])
+        if data:
+            self.value = data['value']
+            if 'date' in data:
+                self.date = data['date']['original']
+            if 'place' in data:
+                self.place = data['place']['original']
+            if 'changeMessage' in data['attribution']:
+                self.note = Note(data['attribution']['changeMessage'])
 
 
 class Name:
@@ -292,18 +303,19 @@ class Name:
         self.prefix = None
         self.suffix = None
         self.note = None
-        if 'parts' in data['nameForms'][0]:
-            for z in data['nameForms'][0]['parts']:
-                if z['type'] == u'http://gedcomx.org/Given':
-                    self.given = z['value']
-                if z['type'] == u'http://gedcomx.org/Surname':
-                    self.surname = z['value']
-                if z['type'] == u'http://gedcomx.org/Prefix':
-                    self.prefix = z['value']
-                if z['type'] == u'http://gedcomx.org/Suffix':
-                    self.suffix = z['value']
-        if 'changeMessage' in data['attribution']:
-            self.note = Note(data['attribution']['changeMessage'])
+        if data:
+            if 'parts' in data['nameForms'][0]:
+                for z in data['nameForms'][0]['parts']:
+                    if z['type'] == u'http://gedcomx.org/Given':
+                        self.given = z['value']
+                    if z['type'] == u'http://gedcomx.org/Surname':
+                        self.surname = z['value']
+                    if z['type'] == u'http://gedcomx.org/Prefix':
+                        self.prefix = z['value']
+                    if z['type'] == u'http://gedcomx.org/Suffix':
+                        self.suffix = z['value']
+            if 'changeMessage' in data['attribution']:
+                self.note = Note(data['attribution']['changeMessage'])
 
     def print(self, file=sys.stdout, type=None):
         file.write('1 NAME ' + self.given + ' /' + self.surname + '/')
@@ -395,19 +407,11 @@ class Indi:
                 if 'sources' in x:
                     for y in x['sources']:
                         json = fs.get_url(y['links']['description']['href'])['sourceDescriptions'][0]
-                        source = None
-                        for s in list_sources:
-                            if s.id == json['id']:
-                                source = s
-                                break
-                        if source:
-                            self.sources.add(source)
+                        if 'changeMessage' in y['attribution']:
+                            self.sources.add((Source.add_source(json), y['attribution']['changeMessage']))
                         else:
-                            if 'changeMessage' in y['attribution']:
-                                self.sources.add((Source(json), y['attribution']['changeMessage']))
-                            else:
-                                self.sources.add((Source(json),))
-            self.parents = None
+                            self.sources.add((Source(json),))
+        self.parents = None
         self.children = None
         self.spouses = None
 
@@ -457,7 +461,8 @@ class Indi:
     # print individual information in GEDCOM format
     def print(self, file=sys.stdout):
         file.write('0 @I' + str(self.num) + '@ INDI\n')
-        self.name.print(file)
+        if self.name:
+            self.name.print(file)
         for o in self.nicknames:
             file.write('2 NICK ' + o.given + ' /' + o .surname + '/\n')
         for o in self.birthnames:
@@ -494,6 +499,10 @@ class Indi:
                 file.write('2 PLAC ' + self.buriplac + '\n')
         for o in self.physical_descriptions:
             file.write('1 DSCR ' + o.value + '\n')
+            if o.date:
+                file.write('2 DATE ' + o.date + '\n')
+            if o.place:
+                file.write('2 PLAC ' + o.place + '\n')
             if o.note:
                 o.note.link(file, 2)
         for num in self.fams_num:
@@ -533,6 +542,7 @@ class Fam:
         self.husb_num = self.wife_num = self.fid = self.marrdate = self.marrplac = None
         self.chil_fid = set()
         self.chil_num = set()
+        self.notes = set()
         self.sources = set()
 
     # add a child to the family
@@ -552,21 +562,17 @@ class Fam:
                 self.marrplac = x['place']['original'] if 'place' in x and 'original' in x['place'] else None
             else:
                 self.marrdate = self.marrplac = None
+            notes = fs.get_url(data['relationships'][0]['links']['notes']['href'])
+            if notes:
+                for n in notes['relationships'][0]['notes']:
+                    self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
             if data and 'sources' in data['relationships'][0]:
                 for y in data['relationships'][0]['sources']:
                     json = fs.get_url(y['links']['description']['href'])['sourceDescriptions'][0]
-                    source = None
-                    for s in list_sources:
-                        if s.id == json['id']:
-                            source = s
-                            break
-                    if source:
-                        self.sources.add(source)
+                    if 'changeMessage' in y['attribution']:
+                        self.sources.add((Source.add_source(json), y['attribution']['changeMessage']))
                     else:
-                        if 'changeMessage' in y['attribution']:
-                            self.sources.add((Source(json), y['attribution']['changeMessage']))
-                        else:
-                            self.sources.add((Source(json),))
+                        self.sources.add((Source(json),))
 
     # print family information in GEDCOM format
     def print(self, file=sys.stdout):
@@ -585,10 +591,13 @@ class Fam:
                 file.write('2 PLAC ' + self.marrplac + '\n')
         if self.fid:
             file.write('1 _FSFTID ' + self.fid + '\n')
+        for o in self.notes:
+            o.link(file)
         for o in self.sources:
             o[0].link(file, 1)
             if len(o) > 1:
                 file.write('2 PAGE ' + o[1] + '\n')
+
 
 # family tree class
 class Tree:
@@ -669,9 +678,19 @@ class Tree:
             self.indi[fid].print(file)
         for husb, wife in sorted(self.fam, key=lambda x: self.fam.__getitem__(x).num):
             self.fam[(husb, wife)].print(file)
-        for n in list_notes:
+        notes = sorted(list_notes, key=lambda x: x.num)
+        for i, n in enumerate(notes):
+            if i > 0:
+                if n.num == notes[i - 1].num:
+                    continue
             n.print(file)
         for s in list_sources:
+            s.print(file)
+        sources = sorted(list_sources, key=lambda x: x.num)
+        for i, s in enumerate(sources):
+            if i > 0:
+                if s.num == sources[i - 1].num:
+                    continue
             s.print(file)
         file.write('0 TRLR\n')
 
@@ -744,4 +763,3 @@ if __name__ == '__main__':
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
     tree.print(args.o)
- 
