@@ -119,9 +119,7 @@ class Gedcom:
                 self.note[num] = Note(num=num)
                 self.indi[self.num].notes.add(self.note[num])
             elif self.tag == 'SOUR':
-                num = int(self.data[2:len(self.data) - 1])
-                self.sour[num] = Source(num=num)
-                self.indi[self.num].notes.add(self.note[num])
+                self.indi[self.num].sources.add(self.get_link_source())
         self.flag = True
 
     def __get_fam(self):
@@ -141,9 +139,7 @@ class Gedcom:
                 self.note[num] = Note(num=num)
                 self.fam[self.num].notes.add(self.note[num])
             elif self.tag == 'SOUR':
-                num = int(self.data[2:len(self.data) - 1])
-                self.sour[num] = Source(num=num)
-                self.fam[self.num].notes.add(self.note[num])
+                self.fam[self.num].sources.add(self.get_link_source())
         self.flag = True
 
     def __get_note(self):
@@ -159,15 +155,25 @@ class Gedcom:
                 self.sour[self.num].title = self.data
             elif self.tag == 'AUTH':
                 self.sour[self.num].citation = self.data
-            elif self.sour == 'PUBL':
-                self.url = self.data
-            elif self.tag == '_FSFTID':
-                self.fid = self.data
+            elif self.tag == 'PUBL':
+                self.sour[self.num].url = self.data
+            elif self.tag == 'REFN':
+                self.sour[self.num].fid = self.data
             elif self.tag == 'NOTE':
                 num = int(self.data[2:len(self.data) - 1])
                 self.note[num] = Note(num=num)
-                self.notes.add(self.note[num])
+                self.sour[self.num].notes.add(self.note[num])
         self.flag = True
+
+    def get_link_source(self):
+        num = int(self.data[2:len(self.data) - 1])
+        self.sour[num] = Source(num=num)
+        while self.__get_line() and self.level > 1:
+            if self.tag == 'PAGE':
+                self.flag = True
+                return (self.sour[num], self.data)
+        self.flag = True
+        return (self.sour[num],)
 
     def __get_fact(self):
         fact = Fact()

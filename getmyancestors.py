@@ -255,12 +255,12 @@ class Source:
             if data['notes']:
                 for n in data['notes']:
                     if n['text']:
-                        self.notes.add(Note(n['text'], fid=n['id']))
+                        self.notes.add(Note(n['text']))
 
     def add_source(data=None):
         if data:
             for s in list_sources:
-                if s.fid == data[fid]:
+                if s.fid == data['id']:
                     return s
             return Source(data)
 
@@ -274,7 +274,7 @@ class Source:
             file.write('1 PUBL ' + self.url + '\n')
         for n in self.notes:
             n.link(file, 1)
-        file.write('1 _FSFTID ' + self.fid + '\n')
+        file.write('1 REFN ' + self.fid + '\n')
 
     def link(self, file=sys.stdout, level=1):
         file.write(str(level) + ' SOUR @S' + str(self.num) + '@\n')
@@ -678,20 +678,18 @@ class Tree:
             self.indi[fid].print(file)
         for husb, wife in sorted(self.fam, key=lambda x: self.fam.__getitem__(x).num):
             self.fam[(husb, wife)].print(file)
-        notes = sorted(list_notes, key=lambda x: x.num)
-        for i, n in enumerate(notes):
-            if i > 0:
-                if n.num == notes[i - 1].num:
-                    continue
-            n.print(file)
-        for s in list_sources:
-            s.print(file)
         sources = sorted(list_sources, key=lambda x: x.num)
         for i, s in enumerate(sources):
             if i > 0:
                 if s.num == sources[i - 1].num:
                     continue
             s.print(file)
+        notes = sorted(list_notes, key=lambda x: x.num)
+        for i, n in enumerate(notes):
+            if i > 0:
+                if n.num == notes[i - 1].num:
+                    continue
+            n.print(file)
         file.write('0 TRLR\n')
 
 
