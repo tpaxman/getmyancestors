@@ -28,7 +28,7 @@ import sys
 import argparse
 
 # local import
-from getmyancestors import Indi, Fam, Tree, Name, Note, Fact, Source, list_notes, list_sources
+from getmyancestors import Indi, Fam, Tree, Name, Note, Fact, Source, Ordinance, list_notes, list_sources
 
 sys.path.append(os.path.dirname(sys.argv[0]))
 
@@ -109,6 +109,14 @@ class Gedcom:
                 self.__get_buri()
             elif self.tag == 'DSCR' or self.tag == 'OCCU':
                 self.__get_fact()
+            elif self.tag == 'BAPL':
+                self.indi[self.num].baptism = self.__get_ordinance()
+            elif self.tag == 'CONL':
+                self.indi[self.num].confirmation = self.__get_ordinance()
+            elif self.tag == 'ENDL':
+                self.indi[self.num].endowment = self.__get_ordinance()
+            elif self.tag == 'SLGS':
+                self.indi[self.num].sealing_child = self.__get_ordinance()
             elif self.tag == 'FAMS':
                 self.indi[self.num].fams_num.add(int(self.data[2:len(self.data) - 1]))
             elif self.tag == 'FAMC':
@@ -120,7 +128,7 @@ class Gedcom:
                 self.note[num] = Note(num=num)
                 self.indi[self.num].notes.add(self.note[num])
             elif self.tag == 'SOUR':
-                self.indi[self.num].sources.add(self.get_link_source())
+                self.indi[self.num].sources.add(self.__get_link_source())
         self.flag = True
 
     def __get_fam(self):
@@ -133,6 +141,8 @@ class Gedcom:
                 self.fam[self.num].chil_num.add(int(self.data[2:len(self.data) - 1]))
             elif self.tag == 'MARR':
                 self.__get_marr()
+            elif self.tag == 'SLGS':
+                self.fam[self.num].sealing_spouse = self.__get_ordinance()
             elif self.tag == '_FSFTID':
                 self.fam[self.num].fid = self.data
             elif self.tag == 'NOTE':
@@ -140,58 +150,7 @@ class Gedcom:
                 self.note[num] = Note(num=num)
                 self.fam[self.num].notes.add(self.note[num])
             elif self.tag == 'SOUR':
-                self.fam[self.num].sources.add(self.get_link_source())
-        self.flag = True
-
-    def __get_note(self):
-        self.note[self.num].text = self.data
-        while self.__get_line() and self.level > 0:
-            if self.tag == 'CONT':
-                self.note[self.num].text += '\n' + self.data
-        self.flag = True
-
-    def __get_source(self):
-        while self.__get_line() and self.level > 0:
-            if self.tag == 'TITL':
-                self.sour[self.num].title = self.data
-            elif self.tag == 'AUTH':
-                self.sour[self.num].citation = self.data
-            elif self.tag == 'PUBL':
-                self.sour[self.num].url = self.data
-            elif self.tag == 'REFN':
-                self.sour[self.num].fid = self.data
-            elif self.tag == 'NOTE':
-                num = int(self.data[2:len(self.data) - 1])
-                self.note[num] = Note(num=num)
-                self.sour[self.num].notes.add(self.note[num])
-        self.flag = True
-
-    def get_link_source(self):
-        num = int(self.data[2:len(self.data) - 1])
-        self.sour[num] = Source(num=num)
-        while self.__get_line() and self.level > 1:
-            if self.tag == 'PAGE':
-                self.flag = True
-                return (self.sour[num], self.data)
-        self.flag = True
-        return (self.sour[num],)
-
-    def __get_fact(self):
-        fact = Fact()
-        fact.value = self.data
-        if self.tag == 'DSCR':
-            self.indi[self.num].physical_descriptions.add(fact)
-        elif self.tag == 'OCCU':
-            self.indi[self.num].occupations.add(fact)
-        while self.__get_line() and self.level > 1:
-            if self.tag == 'DATE':
-                fact.date = self.data
-            elif self.tag == 'PLAC':
-                fact.place = self.data
-            elif self.tag == 'NOTE':
-                num = int(self.data[2:len(self.data) - 1])
-                self.note[num] = Note(num=num)
-                fact.note = (self.note[num])
+                self.fam[self.num].sources.add(self.__get_link_source())
         self.flag = True
 
     def __get_name(self):
@@ -269,6 +228,74 @@ class Gedcom:
                 self.fam[self.num].marrplac = self.data
         self.flag = True
 
+    def __get_fact(self):
+        fact = Fact()
+        fact.value = self.data
+        if self.tag == 'DSCR':
+            self.indi[self.num].physical_descriptions.add(fact)
+        elif self.tag == 'OCCU':
+            self.indi[self.num].occupations.add(fact)
+        while self.__get_line() and self.level > 1:
+            if self.tag == 'DATE':
+                fact.date = self.data
+            elif self.tag == 'PLAC':
+                fact.place = self.data
+            elif self.tag == 'NOTE':
+                num = int(self.data[2:len(self.data) - 1])
+                self.note[num] = Note(num=num)
+                fact.note = (self.note[num])
+        self.flag = True
+
+    def __get_source(self):
+        while self.__get_line() and self.level > 0:
+            if self.tag == 'TITL':
+                self.sour[self.num].title = self.data
+            elif self.tag == 'AUTH':
+                self.sour[self.num].citation = self.data
+            elif self.tag == 'PUBL':
+                self.sour[self.num].url = self.data
+            elif self.tag == 'REFN':
+                self.sour[self.num].fid = self.data
+            elif self.tag == 'NOTE':
+                num = int(self.data[2:len(self.data) - 1])
+                self.note[num] = Note(num=num)
+                self.sour[self.num].notes.add(self.note[num])
+        self.flag = True
+
+    def __get_link_source(self):
+        num = int(self.data[2:len(self.data) - 1])
+        self.sour[num] = Source(num=num)
+        page = None
+        while self.__get_line() and self.level > 1:
+            if self.tag == 'PAGE':
+                page = self.data
+            if self.tag == 'CONT':
+                page += '\n' + self.data
+        self.flag = True
+        if page:
+            return (self.sour[num], page)
+        else:
+            return (self.sour[num],)
+
+    def __get_note(self):
+        self.note[self.num].text = self.data
+        while self.__get_line() and self.level > 0:
+            if self.tag == 'CONT':
+                self.note[self.num].text += '\n' + self.data
+        self.flag = True
+
+    def __get_ordinance(self):
+        ordinance = Ordinance()
+        while self.__get_line() and self.level > 1:
+            if self.tag == 'DATE':
+                ordinance.date = self.data
+            elif self.tag == 'TEMP':
+                ordinance.temple_code = self.data
+            elif self.tag == 'STAT':
+                ordinance.status = self.data
+        self.flag = True
+        return ordinance
+
     def __add_id(self):
         for num in self.fam:
             if self.fam[num].husb_num:
@@ -340,6 +367,10 @@ if __name__ == '__main__':
             tree.indi[fid].occupations = ged.indi[num].occupations
             tree.indi[fid].notes = ged.indi[num].notes
             tree.indi[fid].sources = ged.indi[num].sources
+            tree.indi[fid].baptism = ged.indi[num].baptism
+            tree.indi[fid].confirmation = ged.indi[num].confirmation
+            tree.indi[fid].endowment = ged.indi[num].endowment
+            tree.indi[fid].sealing_child = ged.indi[num].sealing_child
 
         # add informations about families
         for num in ged.fam:
@@ -353,6 +384,7 @@ if __name__ == '__main__':
             tree.fam[(husb, wife)].marrplac = ged.fam[num].marrplac
             tree.fam[(husb, wife)].notes = ged.fam[num].notes
             tree.fam[(husb, wife)].sources = ged.fam[num].sources
+            tree.fam[(husb, wife)].sealing_spouse = ged.fam[num].sealing_spouse
 
     # merge notes by text
     list_notes = sorted(list_notes, key=lambda x: x.text)

@@ -247,13 +247,13 @@ class Source:
 
         if data:
             self.fid = data['id']
-            if data['about']:
+            if 'about' in data:
                 self.url = data['about']
-            if data['citations']:
+            if 'citations' in data:
                 self.citation = data['citations'][0]['value']
             if data['titles']:
                 self.title = data['titles'][0]['value']
-            if data['notes']:
+            if 'notes' in data:
                 for n in data['notes']:
                     if n['text']:
                         self.notes.add(Note(n['text']))
@@ -577,7 +577,7 @@ class Indi:
         for o in self.sources:
             o[0].link(file, 1)
             if len(o) > 1:
-                file.write('2 PAGE ' + o[1] + '\n')
+                file.write('2 PAGE ' + o[1].replace('\n', '\n1 CONT ') + '\n')
 
 
 # GEDCOM family class
@@ -631,13 +631,14 @@ class Fam:
 
     # retrieve and add LDS ordinances
     def add_ordinance(self):
-        url = 'https://familysearch.org/platform/tree/persons/' + self.husb_fid + '/ordinances.json'
-        data = fs.get_url(url)['persons'][0]['ordinances']
-        if data:
-            for o in data:
-                if o['type'] == 'http://lds.org/SealingToSpouse':
-                    if o['spouse']['resourceId'] == self.wife_fid:
-                        self.sealing_spouse = Ordinance(o)
+        if self.husb_fid and self.wife_fid:
+            url = 'https://familysearch.org/platform/tree/persons/' + self.husb_fid + '/ordinances.json'
+            data = fs.get_url(url)['persons'][0]['ordinances']
+            if data:
+                for o in data:
+                    if o['type'] == 'http://lds.org/SealingToSpouse':
+                        if o['spouse']['resourceId'] == self.wife_fid:
+                            self.sealing_spouse = Ordinance(o)
 
     # print family information in GEDCOM format
     def print(self, file=sys.stdout):
@@ -664,7 +665,7 @@ class Fam:
         for o in self.sources:
             o[0].link(file, 1)
             if len(o) > 1:
-                file.write('2 PAGE ' + o[1] + '\n')
+                file.write('2 PAGE ' + o[1].replace('\n', '\n1 CONT ') + '\n')
 
 
 # family tree class
