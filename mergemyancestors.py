@@ -17,6 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
    Written by Giulio Genovese <giulio.genovese@gmail.com>
+   and by Benoît Fontaine <benoitfontaine.ba@gmail.com>
 """
 
 from __future__ import print_function

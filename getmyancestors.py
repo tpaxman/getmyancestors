@@ -17,6 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
    Written by Giulio Genovese <giulio.genovese@gmail.com>
+   and by Benoît Fontaine <benoitfontaine.ba@gmail.com>
 """
 
 from __future__ import print_function
@@ -330,6 +331,31 @@ class Name:
             self.note.link(file, 2)
 
 
+class Ordinance():
+
+    def __init__(self, data=None):
+        self.date = self.temple_code = self.status = None
+        if data:
+            if 'date' in data:
+                self.date = data['date']['formal']
+            if 'templeCode' in data:
+                self.temple_code = data['templeCode']
+            if data['status'] == 'http://familysearch.org/v1/Completed':
+                self.status = 'COMPLETED'
+            if data['status'] == 'http://familysearch.org/v1/Cancelled':
+                self.status = 'CANCELED'
+            if data['status'] == 'http://familysearch.org/v1/InProgress':
+                self.status = 'SUBMITTED'
+
+    def print(self, file=sys.stdout):
+        if self.date:
+            file.write('2 DATE ' + self.date + '\n')
+        if self.temple_code:
+            file.write('2 TEMP ' + self.temple_code + '\n')
+        if self.status:
+            file.write('2 STAT ' + self.status + '\n')
+
+
 # GEDCOM individual class
 class Indi:
 
@@ -350,6 +376,7 @@ class Indi:
         self.name = None
         self.gender = self.birtdate = self.birtplac = self.deatdate = self.deatplac = None
         self.chrdate = self.chrplac = self.buridate = self.buriplac = None
+        self.baptism = self.confirmation = self.endowment = self.sealing_child = None
         self.physical_descriptions = set()
         self.nicknames = set()
         self.occupations = set()
@@ -424,6 +451,21 @@ class Indi:
     def add_famc(self, famc):
         if famc not in self.famc_fid:
             self.famc_fid.add(famc)
+
+    # retrieve and add LDS ordinances
+    def add_ordinances(self):
+        url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/ordinances.json'
+        data = fs.get_url(url)['persons'][0]['ordinances']
+        if data:
+            for o in data:
+                if o['type'] == 'http://lds.org/Baptism':
+                    self.baptism = Ordinance(o)
+                if o['type'] == 'http://lds.org/Confirmation':
+                    self.confirmation = Ordinance(o)
+                if o['type'] == 'http://lds.org/Endowment':
+                    self.endowment = Ordinance(o)
+                if o['type'] == 'http://lds.org/SealingChildToParents':
+                    self.sealing_child = Ordinance(o)
 
     # retrieve parents
     def get_parents(self, fs):
@@ -505,6 +547,18 @@ class Indi:
                 file.write('2 PLAC ' + o.place + '\n')
             if o.note:
                 o.note.link(file, 2)
+        if self.baptism:
+            file.write('1 BAPL\n')
+            self.baptism.print(file)
+        if self.confirmation:
+            file.write('1 CONL\n')
+            self.confirmation.print(file)
+        if self.endowment:
+            file.write('1 ENDL\n')
+            self.endowment.print(file)
+        if self.sealing_child:
+            file.write('1 SLGC\n')
+            self.sealing_child.print(file)
         for num in self.fams_num:
             file.write('1 FAMS @F' + str(num) + '@\n')
         for num in self.famc_num:
@@ -540,6 +594,7 @@ class Fam:
         self.husb_fid = husb if husb else None
         self.wife_fid = wife if wife else None
         self.husb_num = self.wife_num = self.fid = self.marrdate = self.marrplac = None
+        self.sealing_spouse = None
         self.chil_fid = set()
         self.chil_num = set()
         self.notes = set()
@@ -574,6 +629,16 @@ class Fam:
                     else:
                         self.sources.add((Source(json),))
 
+    # retrieve and add LDS ordinances
+    def add_ordinance(self):
+        url = 'https://familysearch.org/platform/tree/persons/' + self.husb_fid + '/ordinances.json'
+        data = fs.get_url(url)['persons'][0]['ordinances']
+        if data:
+            for o in data:
+                if o['type'] == 'http://lds.org/SealingToSpouse':
+                    if o['spouse']['resourceId'] == self.wife_fid:
+                        self.sealing_spouse = Ordinance(o)
+
     # print family information in GEDCOM format
     def print(self, file=sys.stdout):
         file.write('0 @F' + str(self.num) + '@ FAM\n')
@@ -589,6 +654,9 @@ class Fam:
                 file.write('2 DATE ' + self.marrdate + '\n')
             if self.marrplac:
                 file.write('2 PLAC ' + self.marrplac + '\n')
+        if self.sealing_spouse:
+            file.write('1 SLGS\n')
+            self.sealing_spouse.print(file)
         if self.fid:
             file.write('1 _FSFTID ' + self.fid + '\n')
         for o in self.notes:
@@ -651,7 +719,7 @@ class Tree:
     # retrieve and add children relationships
     def add_children(self, fid):
         children = list()
-        rels = tree.indi[fid].get_children(self.fs)
+        rels = self.indi[fid].get_children(self.fs)
         if rels:
             for father, mother, child in rels:
                 self.add_trio(father, mother, child)
@@ -701,6 +769,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', metavar='<INT>', type=int, default=4, help='Number of generations to ascend [4]')
     parser.add_argument('-d', metavar='<INT>', type=int, default=0, help='Number of generations to descend [0]')
     parser.add_argument('-m', action="store_true", default=False, help='Add spouses and couples information [False]')
+    parser.add_argument('-c', action="store_true", default=False, help='Add LDS ordinances [False]')
     parser.add_argument("-v", action="store_true", default=False, help="Increase output verbosity [False]")
     parser.add_argument('-t', metavar='<INT>', type=int, default=60, help='Timeout in seconds [60]')
     try:
@@ -757,6 +826,13 @@ if __name__ == '__main__':
         todo = set(tree.indi.keys())
         for fid in todo:
             tree.add_spouses(fid)
+
+    # download LDS ordinances
+    if args.c:
+        for fid, indi in tree.indi.items():
+            indi.add_ordinances()
+        for fid, fam in tree.fam.items():
+            fam.add_ordinance()
 
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
