@@ -508,7 +508,7 @@ class Indi:
         if self.name:
             self.name.print(file)
         for o in self.nicknames:
-            file.write('2 NICK ' + o.given + ' /' + o .surname + '/\n')
+            file.write('2 NICK ' + o.given + ' ' + o .surname + '\n')
         for o in self.birthnames:
             o.print(file)
         for o in self.aka:
@@ -579,7 +579,7 @@ class Indi:
         for o in self.sources:
             o[0].link(file, 1)
             if len(o) > 1:
-                file.write('2 PAGE ' + o[1].replace('\n', '\n1 CONT ') + '\n')
+                file.write('2 PAGE ' + o[1].replace('\n', '\n2 CONT ') + '\n')
 
 
 # GEDCOM family class
@@ -672,7 +672,7 @@ class Fam:
         for o in self.sources:
             o[0].link(file, 1)
             if len(o) > 1:
-                file.write('2 PAGE ' + o[1].replace('\n', '\n1 CONT ') + '\n')
+                file.write('2 PAGE ' + o[1].replace('\n', '\n2 CONT ') + '\n')
 
 
 # family tree class

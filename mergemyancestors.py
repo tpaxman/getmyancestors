@@ -115,7 +115,7 @@ class Gedcom:
                 self.indi[self.num].confirmation = self.__get_ordinance()
             elif self.tag == 'ENDL':
                 self.indi[self.num].endowment = self.__get_ordinance()
-            elif self.tag == 'SLGS':
+            elif self.tag == 'SLGC':
                 self.indi[self.num].sealing_child = self.__get_ordinance()
             elif self.tag == 'FAMS':
                 self.indi[self.num].fams_num.add(int(self.data[2:len(self.data) - 1]))
@@ -278,7 +278,8 @@ class Gedcom:
 
     def __get_link_source(self):
         num = int(self.data[2:len(self.data) - 1])
-        self.sour[num] = Source(num=num)
+        if num not in self.sour:
+            self.sour[num] = Source(num=num)
         page = None
         while self.__get_line() and self.level > 1:
             if self.tag == 'PAGE':
@@ -410,7 +411,7 @@ if __name__ == '__main__':
         else:
             n.num = list_notes[i - 1].num + 1
 
-    # merge notes by fid
+    # merge sources by fid
     list_sources = sorted(list_sources, key=lambda x: x.fid)
     for i, n in enumerate(list_sources):
         if i == 0:
