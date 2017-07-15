@@ -139,8 +139,8 @@ class Gedcom:
                 self.fam[self.num].wife_num = int(self.data[2:len(self.data) - 1])
             elif self.tag == 'CHIL':
                 self.fam[self.num].chil_num.add(int(self.data[2:len(self.data) - 1]))
-            elif self.tag == 'MARR':
-                self.__get_marr()
+            elif self.tag in ('MARR', 'DIV', 'ANUL', '_COML'):
+                self.fam[self.num].marriage_facts.add(self.__get_marr())
             elif self.tag == 'SLGS':
                 self.fam[self.num].sealing_spouse = self.__get_ordinance()
             elif self.tag == '_FSFTID':
@@ -221,12 +221,26 @@ class Gedcom:
         self.flag = True
 
     def __get_marr(self):
+        fact = Fact()
+        if self.tag == 'MARR':
+            fact.type = 'http://gedcomx.org/Marriage'
+        elif self.tag == 'DIV':
+            fact.type = 'http://gedcomx.org/Divorce'
+        elif self.tag == 'ANUL':
+            fact.type = 'http://gedcomx.org/Annulment'
+        elif self.tag == '_COML':
+            fact.type = 'http://gedcomx.org/CommonLawMarriage'
         while self.__get_line() and self.level > 1:
             if self.tag == 'DATE':
-                self.fam[self.num].marrdate = self.data
+                fact.date = self.data
             elif self.tag == 'PLAC':
-                self.fam[self.num].marrplac = self.data
+                fact.place = self.data
+            elif self.tag == 'NOTE':
+                num = int(self.data[2:len(self.data) - 1])
+                self.note[num] = Note(num=num)
+                fact.note = (self.note[num])
         self.flag = True
+        return fact
 
     def __get_fact(self):
         fact = Fact()
@@ -380,8 +394,7 @@ if __name__ == '__main__':
                 tree.fam[(husb, wife)] = Fam(husb, wife, fam_counter)
             tree.fam[(husb, wife)].chil_fid |= ged.fam[num].chil_fid
             tree.fam[(husb, wife)].fid = ged.fam[num].fid
-            tree.fam[(husb, wife)].marrdate = ged.fam[num].marrdate
-            tree.fam[(husb, wife)].marrplac = ged.fam[num].marrplac
+            tree.fam[(husb, wife)].marriage_facts = ged.fam[num].marriage_facts
             tree.fam[(husb, wife)].notes = ged.fam[num].notes
             tree.fam[(husb, wife)].sources = ged.fam[num].sources
             tree.fam[(husb, wife)].sealing_spouse = ged.fam[num].sealing_spouse

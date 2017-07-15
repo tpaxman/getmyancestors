@@ -284,10 +284,12 @@ class Source:
 class Fact:
 
     def __init__(self, data=None):
-        self.value = ''
-        self.date = self.place = self.note = None
+        self.value = self.type = self.date = self.place = self.note = None
         if data:
-            self.value = data['value']
+            if 'value' in data:
+                self.value = data['value']
+            if 'type' in data:
+                self.type = data['type']
             if 'date' in data:
                 self.date = data['date']['original']
             if 'place' in data:
@@ -340,11 +342,11 @@ class Ordinance():
                 self.date = data['date']['formal']
             if 'templeCode' in data:
                 self.temple_code = data['templeCode']
-            if data['status'] == 'http://familysearch.org/v1/Completed':
+            if data['status'] == u'http://familysearch.org/v1/Completed':
                 self.status = 'COMPLETED'
-            if data['status'] == 'http://familysearch.org/v1/Cancelled':
+            if data['status'] == u'http://familysearch.org/v1/Cancelled':
                 self.status = 'CANCELED'
-            if data['status'] == 'http://familysearch.org/v1/InProgress':
+            if data['status'] == u'http://familysearch.org/v1/InProgress':
                 self.status = 'SUBMITTED'
 
     def print(self, file=sys.stdout):
@@ -458,13 +460,13 @@ class Indi:
         data = fs.get_url(url)['persons'][0]['ordinances']
         if data:
             for o in data:
-                if o['type'] == 'http://lds.org/Baptism':
+                if o['type'] == u'http://lds.org/Baptism':
                     self.baptism = Ordinance(o)
-                if o['type'] == 'http://lds.org/Confirmation':
+                if o['type'] == u'http://lds.org/Confirmation':
                     self.confirmation = Ordinance(o)
-                if o['type'] == 'http://lds.org/Endowment':
+                if o['type'] == u'http://lds.org/Endowment':
                     self.endowment = Ordinance(o)
-                if o['type'] == 'http://lds.org/SealingChildToParents':
+                if o['type'] == u'http://lds.org/SealingChildToParents':
                     self.sealing_child = Ordinance(o)
 
     # retrieve parents
@@ -593,7 +595,8 @@ class Fam:
             self.num = Fam.counter
         self.husb_fid = husb if husb else None
         self.wife_fid = wife if wife else None
-        self.husb_num = self.wife_num = self.fid = self.marrdate = self.marrplac = None
+        self.husb_num = self.wife_num = self.fid = None
+        self.marriage_facts = set()
         self.sealing_spouse = None
         self.chil_fid = set()
         self.chil_num = set()
@@ -612,15 +615,8 @@ class Fam:
             url = 'https://familysearch.org/platform/tree/couple-relationships/' + self.fid + '.json'
             data = fs.get_url(url)
             if data and 'facts' in data['relationships'][0]:
-                x = data['relationships'][0]['facts'][0]
-                self.marrdate = x['date']['original'] if 'date' in x and 'original' in x['date'] else None
-                self.marrplac = x['place']['original'] if 'place' in x and 'original' in x['place'] else None
-            else:
-                self.marrdate = self.marrplac = None
-            notes = fs.get_url(data['relationships'][0]['links']['notes']['href'])
-            if notes:
-                for n in notes['relationships'][0]['notes']:
-                    self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
+                for x in data['relationships'][0]['facts']:
+                    self.marriage_facts.add(Fact(x))
             if data and 'sources' in data['relationships'][0]:
                 for y in data['relationships'][0]['sources']:
                     json = fs.get_url(y['links']['description']['href'])['sourceDescriptions'][0]
@@ -628,6 +624,10 @@ class Fam:
                         self.sources.add((Source.add_source(json), y['attribution']['changeMessage']))
                     else:
                         self.sources.add((Source(json),))
+            notes = fs.get_url(data['relationships'][0]['links']['notes']['href'])
+            if notes:
+                for n in notes['relationships'][0]['notes']:
+                    self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
 
     # retrieve and add LDS ordinances
     def add_ordinance(self):
@@ -649,12 +649,19 @@ class Fam:
             file.write('1 WIFE @I' + str(self.wife_num) + '@\n')
         for num in self.chil_num:
             file.write('1 CHIL @I' + str(num) + '@\n')
-        if self.marrdate or self.marrplac:
-            file.write('1 MARR\n')
-            if self.marrdate:
-                file.write('2 DATE ' + self.marrdate + '\n')
-            if self.marrplac:
-                file.write('2 PLAC ' + self.marrplac + '\n')
+        for o in self.marriage_facts:
+            if o.type == u'http://gedcomx.org/Marriage':
+                file.write('1 MARR\n')
+            if o.type == u'http://gedcomx.org/Divorce':
+                file.write('1 DIV\n')
+            if o.type == u'http://gedcomx.org/Annulment':
+                file.write('1 ANUL\n')
+            if o.type == u'http://gedcomx.org/CommonLawMarriage':
+                file.write('1 _COML\n')
+            if o.date:
+                file.write('2 DATE ' + o.date + '\n')
+            if o.place:
+                file.write('2 PLAC ' + o.place + '\n')
         if self.sealing_spouse:
             file.write('1 SLGS\n')
             self.sealing_spouse.print(file)
