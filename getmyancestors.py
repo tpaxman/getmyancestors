@@ -336,12 +336,16 @@ class Name:
 class Ordinance():
 
     def __init__(self, data=None):
-        self.date = self.temple_code = self.status = None
+        self.date = self.temple_code = self.status = self.famc = None
         if data:
             if 'date' in data:
                 self.date = data['date']['formal']
             if 'templeCode' in data:
                 self.temple_code = data['templeCode']
+            if 'father' in data and 'mother' in data:
+                famc = (data['father']['resourceId'], data['mother']['resourceId'])
+                if famc in tree.fam:
+                    self.famc = tree.fam[famc]
             if data['status'] == u'http://familysearch.org/v1/Completed':
                 self.status = 'COMPLETED'
             if data['status'] == u'http://familysearch.org/v1/Cancelled':
@@ -356,6 +360,8 @@ class Ordinance():
             file.write('2 TEMP ' + self.temple_code + '\n')
         if self.status:
             file.write('2 STAT ' + self.status + '\n')
+        if self.famc:
+            file.write('2 FAMC @F' + str(self.famc.num) + '@\n')
 
 
 # GEDCOM individual class
@@ -406,16 +412,12 @@ class Indi:
                             if y['type'] == u'http://gedcomx.org/MarriedName':
                                 self.married.add(Name(y))
                 if 'gender' in x:
-                    if x['gender']['type'] == "http://gedcomx.org/Male":
-                        self.gender = "M"
-                    elif x['gender']['type'] == "http://gedcomx.org/Female":
-                        self.gender = "F"
-                else:
-                    self.gender = None
-                notes = fs.get_url(x['links']['notes']['href'])
-                if notes:
-                    for n in notes['persons'][0]['notes']:
-                        self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
+                    if x['gender']['type'] == 'http://gedcomx.org/Male':
+                        self.gender = 'M'
+                    elif x['gender']['type'] == 'http://gedcomx.org/Female':
+                        self.gender = 'F'
+                    elif x['gender']['type'] == 'http://gedcomx.org/Unknown':
+                        self.gender = 'U'
                 for y in x['facts']:
                     if y['type'] == u'http://gedcomx.org/Birth':
                         self.birtdate = y['date']['original'] if 'date' in y and 'original' in y['date'] else None
@@ -440,6 +442,10 @@ class Indi:
                             self.sources.add((Source.add_source(json), y['attribution']['changeMessage']))
                         else:
                             self.sources.add((Source(json),))
+                notes = fs.get_url(x['links']['notes']['href'])
+                if notes:
+                    for n in notes['persons'][0]['notes']:
+                        self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
         self.parents = None
         self.children = None
         self.spouses = None
@@ -453,21 +459,6 @@ class Indi:
     def add_famc(self, famc):
         if famc not in self.famc_fid:
             self.famc_fid.add(famc)
-
-    # retrieve and add LDS ordinances
-    def add_ordinances(self):
-        url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/ordinances.json'
-        data = fs.get_url(url)['persons'][0]['ordinances']
-        if data:
-            for o in data:
-                if o['type'] == u'http://lds.org/Baptism':
-                    self.baptism = Ordinance(o)
-                if o['type'] == u'http://lds.org/Confirmation':
-                    self.confirmation = Ordinance(o)
-                if o['type'] == u'http://lds.org/Endowment':
-                    self.endowment = Ordinance(o)
-                if o['type'] == u'http://lds.org/SealingChildToParents':
-                    self.sealing_child = Ordinance(o)
 
     # retrieve parents
     def get_parents(self, fs):
@@ -501,6 +492,25 @@ class Indi:
             if data and 'relationships' in data:
                 self.spouses = [(x['person1']['resourceId'], x['person2']['resourceId'], x['id']) for x in data['relationships']]
         return self.spouses
+
+    # retrieve and add LDS ordinances
+    def get_ordinances(self):
+        res = []
+        url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/ordinances.json'
+        data = fs.get_url(url)['persons'][0]['ordinances']
+        if data:
+            for o in data:
+                if o['type'] == u'http://lds.org/Baptism':
+                    self.baptism = Ordinance(o)
+                if o['type'] == u'http://lds.org/Confirmation':
+                    self.confirmation = Ordinance(o)
+                if o['type'] == u'http://lds.org/Endowment':
+                    self.endowment = Ordinance(o)
+                if o['type'] == u'http://lds.org/SealingChildToParents':
+                    self.sealing_child = Ordinance(o)
+                if o['type'] == u'http://lds.org/SealingToSpouse':
+                    res.append(o)
+        return res
 
     # print individual information in GEDCOM format
     def print(self, file=sys.stdout):
@@ -629,17 +639,6 @@ class Fam:
                 for n in notes['relationships'][0]['notes']:
                     self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
 
-    # retrieve and add LDS ordinances
-    def add_ordinance(self):
-        if self.husb_fid and self.wife_fid:
-            url = 'https://familysearch.org/platform/tree/persons/' + self.husb_fid + '/ordinances.json'
-            data = fs.get_url(url)['persons'][0]['ordinances']
-            if data:
-                for o in data:
-                    if o['type'] == 'http://lds.org/SealingToSpouse':
-                        if o['spouse']['resourceId'] == self.wife_fid:
-                            self.sealing_spouse = Ordinance(o)
-
     # print family information in GEDCOM format
     def print(self, file=sys.stdout):
         file.write('0 @F' + str(self.num) + '@ FAM\n')
@@ -662,6 +661,8 @@ class Fam:
                 file.write('2 DATE ' + o.date + '\n')
             if o.place:
                 file.write('2 PLAC ' + o.place + '\n')
+            if o.note:
+                file.write('2 NOTE @N' + str(o.note.num) + '@\n')
         if self.sealing_spouse:
             file.write('1 SLGS\n')
             self.sealing_spouse.print(file)
@@ -838,9 +839,12 @@ if __name__ == '__main__':
     # download LDS ordinances
     if args.c:
         for fid, indi in tree.indi.items():
-            indi.add_ordinances()
-        for fid, fam in tree.fam.items():
-            fam.add_ordinance()
+            ret = indi.get_ordinances()
+            for o in ret:
+                if (fid, o['spouse']['resourceId']) in tree.fam:
+                    tree.fam[(fid, o['spouse']['resourceId'])].sealing_spouse = Ordinance(o)
+                elif (o['spouse']['resourceId'], fid) in tree.fam:
+                    tree.fam[(o['spouse']['resourceId'], fid)].sealing_spouse = Ordinance(o)
 
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()

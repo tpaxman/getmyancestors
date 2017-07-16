@@ -58,7 +58,8 @@ class Gedcom:
                 self.__get_indi()
             elif self.tag == 'FAM':
                 self.num = int(self.pointer[2:len(self.pointer) - 1])
-                self.fam[self.num] = Fam(num=self.num)
+                if self.num not in self.fam:
+                    self.fam[self.num] = Fam(num=self.num)
                 self.__get_fam()
             elif self.tag == 'NOTE':
                 self.num = int(self.pointer[2:len(self.pointer) - 1])
@@ -308,6 +309,11 @@ class Gedcom:
                 ordinance.temple_code = self.data
             elif self.tag == 'STAT':
                 ordinance.status = self.data
+            elif self.tag == 'FAMC':
+                num = int(self.data[2:len(self.data) - 1])
+                if num not in self.fam:
+                    self.fam[num] = Fam(num=num)
+                ordinance.famc = self.fam[num]
         self.flag = True
         return ordinance
 
@@ -385,7 +391,8 @@ if __name__ == '__main__':
             tree.indi[fid].baptism = ged.indi[num].baptism
             tree.indi[fid].confirmation = ged.indi[num].confirmation
             tree.indi[fid].endowment = ged.indi[num].endowment
-            tree.indi[fid].sealing_child = ged.indi[num].sealing_child
+            if not (tree.indi[fid].sealing_child and tree.indi[fid].sealing_child.famc):
+                tree.indi[fid].sealing_child = ged.indi[num].sealing_child
 
         # add informations about families
         for num in ged.fam:
