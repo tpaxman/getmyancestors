@@ -62,4 +62,4 @@ python3 getmyancestors.py -c -u username -p password -i LF7T-Y4C -o out.ged
 Support
 =======
 
-Send questions, suggestions, or feature requests to giulio.genovese@gmail.com
+Send questions, suggestions, or feature requests to benoitfontaine.ba@gmail.com or giulio.genovese@gmail.com
