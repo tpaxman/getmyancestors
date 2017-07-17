@@ -177,9 +177,7 @@ class Gedcom:
                     added = True
             elif self.tag == 'NICK':
                 nick = Name()
-                parts = self.data.split('/')
-                nick.given = parts[0]
-                nick.surname = parts[1]
+                nick.given = self.data
                 self.indi[self.num].nicknames.add(nick)
             elif self.tag == 'NOTE':
                 num = int(self.data[2:len(self.data) - 1])
