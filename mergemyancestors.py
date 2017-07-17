@@ -108,7 +108,7 @@ class Gedcom:
                 self.__get_deat()
             elif self.tag == 'BURI':
                 self.__get_buri()
-            elif self.tag == 'DSCR' or self.tag == 'OCCU':
+            elif self.tag == 'DSCR' or self.tag == 'OCCU' or self.tag == '_MILT':
                 self.__get_fact()
             elif self.tag == 'BAPL':
                 self.indi[self.num].baptism = self.__get_ordinance()
@@ -250,6 +250,8 @@ class Gedcom:
             self.indi[self.num].physical_descriptions.add(fact)
         elif self.tag == 'OCCU':
             self.indi[self.num].occupations.add(fact)
+        elif self.tag == '_MILT':
+            self.indi[self.num].military.add(fact)
         while self.__get_line() and self.level > 1:
             if self.tag == 'DATE':
                 fact.date = self.data
@@ -386,6 +388,7 @@ if __name__ == '__main__':
             tree.indi[fid].buriplac = ged.indi[num].buriplac
             tree.indi[fid].physical_descriptions = ged.indi[num].physical_descriptions
             tree.indi[fid].occupations = ged.indi[num].occupations
+            tree.indi[fid].military = ged.indi[num].military
             tree.indi[fid].notes = ged.indi[num].notes
             tree.indi[fid].sources = ged.indi[num].sources
             tree.indi[fid].baptism = ged.indi[num].baptism

@@ -388,6 +388,7 @@ class Indi:
         self.physical_descriptions = set()
         self.nicknames = set()
         self.occupations = set()
+        self.military = set()
         self.birthnames = set()
         self.married = set()
         self.aka = set()
@@ -435,6 +436,8 @@ class Indi:
                         self.physical_descriptions.add(Fact(y))
                     if y['type'] == u'http://gedcomx.org/Occupation':
                         self.occupations.add(Fact(y))
+                    if y['type'] == u'http://gedcomx.org/MilitaryService':
+                        self.military.add(Fact(y))
                 if 'sources' in x:
                     for y in x['sources']:
                         json = fs.get_url(y['links']['description']['href'])['sourceDescriptions'][0]
@@ -577,6 +580,14 @@ class Indi:
             file.write('1 FAMC @F' + str(num) + '@\n')
         for o in self.occupations:
             file.write('1 OCCU ' + o.value + '\n')
+            if o.date:
+                file.write('2 DATE ' + o.date + '\n')
+            if o.place:
+                file.write('2 PLAC ' + o.place + '\n')
+            if o.note:
+                o.note.link(file, 2)
+        for o in self.military:
+            file.write('1 _MILT ' + o.value + '\n')
             if o.date:
                 file.write('2 DATE ' + o.date + '\n')
             if o.place:
