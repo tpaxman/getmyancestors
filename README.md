@@ -54,7 +54,7 @@ Download six generations of ancestors for individuals L4S5-9X4 and LHWG-18F incl
 python3 getmyancestors.py -a 6 -d 2 -m -u username -p password -i L4S5-9X4 LHWG-18F -o out.ged
 ```
 
-Download four generations of ancestors for individual LF7T-Y4C including LDS ordinances
+Download four generations of ancestors for individual LF7T-Y4C including LDS ordinances (need LDS account)
 
 ```
 python3 getmyancestors.py -c -u username -p password -i LF7T-Y4C -o out.ged

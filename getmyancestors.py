@@ -175,7 +175,7 @@ class Session:
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
                 # r = requests.get(url, cookies = { 's_vi': self.s_vi, 'fssessionid' : self.fssessionid }, timeout = self.timeout)
-                r = requests.get(url, cookies={'fssessionid': self.fssessionid}, timeout=self.timeout)
+                fr = requests.get(url, cookies={'fssessionid': self.fssessionid}, timeout=self.timeout)
             except requests.exceptions.ReadTimeout:
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Read timed out\n')
@@ -186,20 +186,23 @@ class Session:
                 time.sleep(self.timeout)
                 continue
             if self.verbose:
-                self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Status code: ' + str(r.status_code) + '\n')
-            if r.status_code == 204 or r.status_code == 410:
+                self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Status code: ' + str(fr.status_code) + '\n')
+            if fr.status_code == 204 or fr.status_code == 410:
                 return None
-            if r.status_code == 401:
+            if fr.status_code == 401:
                 self.login()
                 continue
             try:
-                r.raise_for_status()
+                fr.raise_for_status()
             except requests.exceptions.HTTPError:
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: HTTPError\n')
+                if 'message' in fr.json()['errors'][0] and fr.json()['errors'][0]['message'] == u'Unable to get ordinances.':
+                    self.logfile.write('Unable to get ordinances. Try without option -c.\n')
+                    exit()
                 time.sleep(self.timeout)
                 continue
-            return r.json()
+            return fr.json()
 
     # retrieve FamilySearch current user ID
     def get_userid(self):
@@ -789,7 +792,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', metavar='<INT>', type=int, default=4, help='Number of generations to ascend [4]')
     parser.add_argument('-d', metavar='<INT>', type=int, default=0, help='Number of generations to descend [0]')
     parser.add_argument('-m', action="store_true", default=False, help='Add spouses and couples information [False]')
-    parser.add_argument('-c', action="store_true", default=False, help='Add LDS ordinances [False]')
+    parser.add_argument('-c', action="store_true", default=False, help='Add LDS ordinances (need LDS account) [False]')
     parser.add_argument("-v", action="store_true", default=False, help="Increase output verbosity [False]")
     parser.add_argument('-t', metavar='<INT>', type=int, default=60, help='Timeout in seconds [60]')
     try:
@@ -814,6 +817,10 @@ if __name__ == '__main__':
     # initialize a FamilySearch session and a family tree object
     fs = Session(username, password, args.v, args.l, args.t)
     tree = Tree(fs)
+
+    # check LDS account
+    if args.c:
+        fs.get_url('https://familysearch.org/platform/tree/persons/' + fs.get_userid() + '/ordinances.json')
 
     # add list of starting individuals to the family tree
     todo = set(args.i if args.i else [fs.get_userid()])
