@@ -792,6 +792,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', metavar='<INT>', type=int, default=4, help='Number of generations to ascend [4]')
     parser.add_argument('-d', metavar='<INT>', type=int, default=0, help='Number of generations to descend [0]')
     parser.add_argument('-m', action="store_true", default=False, help='Add spouses and couples information [False]')
+    parser.add_argument('-r', action="store_true", default=False, help='Add contributors in notes [False]')
     parser.add_argument('-c', action="store_true", default=False, help='Add LDS ordinances (need LDS account) [False]')
     parser.add_argument("-v", action="store_true", default=False, help="Increase output verbosity [False]")
     parser.add_argument('-t', metavar='<INT>', type=int, default=60, help='Timeout in seconds [60]')
@@ -863,6 +864,25 @@ if __name__ == '__main__':
                     tree.fam[(fid, o['spouse']['resourceId'])].sealing_spouse = Ordinance(o)
                 elif (o['spouse']['resourceId'], fid) in tree.fam:
                     tree.fam[(o['spouse']['resourceId'], fid)].sealing_spouse = Ordinance(o)
+
+    # download contributors in notes
+    if args.r:
+        for fid, indi in tree.indi.items():
+            temp = set()
+            data = fs.get_url('https://familysearch.org/platform/tree/persons/' + fid + '/changes.json')
+            for entries in data['entries']:
+                for contributors in entries['contributors']:
+                    temp.add(contributors['name'])
+            if temp:
+                indi.notes.add(Note('Contributeurs :\n' + '\n'.join(sorted(temp))))
+
+        for fid, fam in tree.fam.items():
+            if not fam.fid:
+                continue
+            temp = set()
+            data = fs.get_url('https://familysearch.org/platform/tree/couple-relationships/' + fam.fid + '/changes.json')
+            if temp:
+                fam.notes.add(Note('Contributeurs :\n' + '\n'.join(sorted(temp))))
 
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
