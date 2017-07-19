@@ -25,6 +25,7 @@ import sys
 import argparse
 import getpass
 import time
+import asyncio
 
 try:
     import requests
@@ -709,9 +710,15 @@ class Tree:
 
     # add a children relationship (possibly incomplete) to the family tree
     def add_trio(self, father, mother, child):
-        self.add_indi(father)
-        self.add_indi(mother)
-        self.add_indi(child)
+        async def addtrucs(loop):
+            f1 = loop.run_in_executor(None, self.add_indi, father)
+            f2 = loop.run_in_executor(None, self.add_indi, mother)
+            f3 = loop.run_in_executor(None, self.add_indi, child)
+            await f1
+            await f2
+            await f3
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(addtrucs(loop))
         if father:
             self.indi[father].add_fams((father, mother))
         if mother:
@@ -856,14 +863,24 @@ if __name__ == '__main__':
             tree.add_spouses(fid)
 
     # download LDS ordinances
-    if args.c:
-        for fid, indi in tree.indi.items():
-            ret = indi.get_ordinances()
-            for o in ret:
-                if (fid, o['spouse']['resourceId']) in tree.fam:
-                    tree.fam[(fid, o['spouse']['resourceId'])].sealing_spouse = Ordinance(o)
-                elif (o['spouse']['resourceId'], fid) in tree.fam:
-                    tree.fam[(o['spouse']['resourceId'], fid)].sealing_spouse = Ordinance(o)
+    def ord(fid, indi):
+        ret = indi.get_ordinances()
+        for o in ret:
+            if (fid, o['spouse']['resourceId']) in tree.fam:
+                tree.fam[(fid, o['spouse']['resourceId'])].sealing_spouse = Ordinance(o)
+            elif (o['spouse']['resourceId'], fid) in tree.fam:
+                tree.fam[(o['spouse']['resourceId'], fid)].sealing_spouse = Ordinance(o)
+
+    async def aarrgg(loop):
+        ooo = []
+        if args.c:
+            for fid, indi in tree.indi.items():
+                ooo.append(loop.run_in_executor(None, ord, fid, indi))
+        for fff in ooo:
+            await fff
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(aarrgg(loop))
 
     # download contributors in notes
     if args.r:
