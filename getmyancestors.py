@@ -449,10 +449,6 @@ class Indi:
                             self.sources.add((Source.add_source(json), y['attribution']['changeMessage']))
                         else:
                             self.sources.add((Source(json),))
-                notes = fs.get_url(x['links']['notes']['href'])
-                if notes:
-                    for n in notes['persons'][0]['notes']:
-                        self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
         self.parents = None
         self.children = None
         self.spouses = None
@@ -500,7 +496,14 @@ class Indi:
                 self.spouses = [(x['person1']['resourceId'], x['person2']['resourceId'], x['id']) for x in data['relationships']]
         return self.spouses
 
-    # retrieve and add LDS ordinances
+    # retrieve individual notes
+    def get_notes(self):
+        notes = fs.get_url('https://familysearch.org/platform/tree/persons/' + self.fid + '/notes.json')
+        if notes:
+            for n in notes['persons'][0]['notes']:
+                self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
+
+    # retrieve LDS ordinances
     def get_ordinances(self):
         res = []
         url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/ordinances.json'
@@ -518,6 +521,16 @@ class Indi:
                 if o['type'] == u'http://lds.org/SealingToSpouse':
                     res.append(o)
         return res
+
+    # retrieve contributors
+    def get_contributors(self):
+        temp = set()
+        data = fs.get_url('https://familysearch.org/platform/tree/persons/' + self.fid + '/changes.json')
+        for entries in data['entries']:
+            for contributors in entries['contributors']:
+                temp.add(contributors['name'])
+        if temp:
+            self.notes.add(Note('Contributeurs :\n' + '\n'.join(sorted(temp))))
 
     # print individual information in GEDCOM format
     def print(self, file=sys.stdout):
@@ -649,10 +662,23 @@ class Fam:
                         self.sources.add((Source.add_source(json), y['attribution']['changeMessage']))
                     else:
                         self.sources.add((Source(json),))
-            notes = fs.get_url(data['relationships'][0]['links']['notes']['href'])
-            if notes:
-                for n in notes['relationships'][0]['notes']:
-                    self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
+
+    # retrieve marriage notes
+    def get_notes(self):
+        notes = fs.get_url('https://familysearch.org/platform/tree/couple-relationships/' + self.fid + '/notes.json')
+        if notes:
+            for n in notes['relationships'][0]['notes']:
+                self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
+
+    # retrieve contributors
+    def get_contributors(self):
+        temp = set()
+        data = fs.get_url('https://familysearch.org/platform/tree/persons/' + self.fid + '/changes.json')
+        for entries in data['entries']:
+            for contributors in entries['contributors']:
+                temp.add(contributors['name'])
+        if temp:
+            self.notes.add(Note('Contributeurs :\n' + '\n'.join(sorted(temp))))
 
     # print family information in GEDCOM format
     def print(self, file=sys.stdout):
@@ -697,6 +723,7 @@ class Tree:
         self.fs = fs
         self.indi = dict()
         self.fam = dict()
+        self.loop = asyncio.get_event_loop()
 
     # add individual to the family tree
     def add_indi(self, fid):
@@ -709,20 +736,17 @@ class Tree:
             self.fam[(father, mother)] = Fam(father, mother)
 
     # add a children relationship (possibly incomplete) to the family tree
-    def add_trio(self, father, mother, child):
-        async def addtrucs(loop):
-            f1 = loop.run_in_executor(None, self.add_indi, father)
-            f2 = loop.run_in_executor(None, self.add_indi, mother)
-            f3 = loop.run_in_executor(None, self.add_indi, child)
-            await f1
-            await f2
-            await f3
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(addtrucs(loop))
+    async def add_trio(self, father, mother, child):
+        f1 = self.loop.run_in_executor(None, self.add_indi, father)
+        f2 = self.loop.run_in_executor(None, self.add_indi, mother)
+        f3 = self.loop.run_in_executor(None, self.add_indi, child)
+        await f1
+        await f2
         if father:
             self.indi[father].add_fams((father, mother))
         if mother:
             self.indi[mother].add_fams((father, mother))
+        await f3
         self.indi[child].add_famc((father, mother))
         self.add_fam(father, mother)
         self.fam[(father, mother)].add_child(child)
@@ -731,7 +755,7 @@ class Tree:
     def add_parents(self, fid):
         father, mother = self.indi[fid].get_parents(self.fs)
         if father or mother:
-            tree.add_trio(father, mother, fid)
+            self.loop.run_until_complete(tree.add_trio(father, mother, fid))
         return filter(None, (father, mother))
 
     # retrieve and add spouse relationships
@@ -752,9 +776,18 @@ class Tree:
         rels = self.indi[fid].get_children(self.fs)
         if rels:
             for father, mother, child in rels:
-                self.add_trio(father, mother, child)
+                self.loop.run_until_complete(self.add_trio(father, mother, child))
                 children.append(child)
         return children
+
+    # retrieve ordinances
+    def add_ordinances(self, fid):
+        ret = self.indi[fid].get_ordinances()
+        for o in ret:
+            if (fid, o['spouse']['resourceId']) in self.fam:
+                self.fam[(fid, o['spouse']['resourceId'])].sealing_spouse = Ordinance(o)
+            elif (o['spouse']['resourceId'], fid) in self.fam:
+                self.fam[(o['spouse']['resourceId'], fid)].sealing_spouse = Ordinance(o)
 
     def reset_num(self):
         for husb, wife in self.fam:
@@ -830,6 +863,8 @@ if __name__ == '__main__':
     if args.c:
         fs.get_url('https://familysearch.org/platform/tree/persons/' + fs.get_userid() + '/ordinances.json')
 
+    time_count = time.time()
+
     # add list of starting individuals to the family tree
     todo = set(args.i if args.i else [fs.get_userid()])
     for fid in todo:
@@ -862,45 +897,28 @@ if __name__ == '__main__':
         for fid in todo:
             tree.add_spouses(fid)
 
-    # download LDS ordinances
-    def ord(fid, indi):
-        ret = indi.get_ordinances()
-        for o in ret:
-            if (fid, o['spouse']['resourceId']) in tree.fam:
-                tree.fam[(fid, o['spouse']['resourceId'])].sealing_spouse = Ordinance(o)
-            elif (o['spouse']['resourceId'], fid) in tree.fam:
-                tree.fam[(o['spouse']['resourceId'], fid)].sealing_spouse = Ordinance(o)
-
-    async def aarrgg(loop):
-        ooo = []
-        if args.c:
-            for fid, indi in tree.indi.items():
-                ooo.append(loop.run_in_executor(None, ord, fid, indi))
-        for fff in ooo:
-            await fff
-
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(aarrgg(loop))
 
-    # download contributors in notes
-    if args.r:
+    # download ordinances, notes and contributors
+    async def download_stuff(loop):
+        futures = set()
         for fid, indi in tree.indi.items():
-            temp = set()
-            data = fs.get_url('https://familysearch.org/platform/tree/persons/' + fid + '/changes.json')
-            for entries in data['entries']:
-                for contributors in entries['contributors']:
-                    temp.add(contributors['name'])
-            if temp:
-                indi.notes.add(Note('Contributeurs :\n' + '\n'.join(sorted(temp))))
-
+            if args.c:
+                futures.add(loop.run_in_executor(None, tree.add_ordinances, fid))
+            futures.add(loop.run_in_executor(None, indi.get_notes))
+            if args.r:
+                futures.add(loop.run_in_executor(None, indi.get_contributors))
         for fid, fam in tree.fam.items():
-            if not fam.fid:
-                continue
-            temp = set()
-            data = fs.get_url('https://familysearch.org/platform/tree/couple-relationships/' + fam.fid + '/changes.json')
-            if temp:
-                fam.notes.add(Note('Contributeurs :\n' + '\n'.join(sorted(temp))))
+            futures.add(loop.run_in_executor(None, fam.get_notes))
+            if args.r:
+                futures.add(loop.run_in_executor(None, fam.get_contributors))
+        for future in futures:
+            await future
+
+    loop.run_until_complete(download_stuff(loop))
 
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
     tree.print(args.o)
+
+    print(time.time() - time_count)
