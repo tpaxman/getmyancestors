@@ -675,7 +675,7 @@ class Fam:
     def get_contributors(self):
         if self.fid:
             temp = set()
-            data = fs.get_url('https://familysearch.org/platform/tree/persons/' + self.fid + '/changes.json')
+            data = fs.get_url('https://familysearch.org/platform/tree/couple-relationships/' + self.fid + '/changes.json')
             for entries in data['entries']:
                 for contributors in entries['contributors']:
                     temp.add(contributors['name'])
@@ -870,16 +870,7 @@ if __name__ == '__main__':
     for fid in todo:
         tree.add_indi(fid)
 
-    # download ancestors
-    # for i in range(args.a):
-    #     next_todo = set()
-    #     for fid in todo:
-    #         done.add(fid)
-    #         for parent in tree.add_parents(fid):
-    #             next_todo.add(parent)
-    #     todo = next_todo - done
-
-    async def yolo(func, todo, n, loop):
+    async def download_tree(func, todo, n, loop):
         futures = set()
         done = set()
         for i in range(n):
@@ -892,23 +883,13 @@ if __name__ == '__main__':
                     next_todo.add(parent)
             todo = next_todo - done
 
-    loop.run_until_complete(yolo(tree.add_parents, todo, args.a, loop))
+    # download ancestors
+    loop.run_until_complete(download_tree(tree.add_parents, todo, args.a, loop))
 
     # download descendants
     todo = set(tree.indi.keys())
+    loop.run_until_complete(download_tree(tree.add_children, todo, args.d, loop))
 
-    loop.run_until_complete(yolo(tree.add_children, todo, args.d, loop))
-
-    # done = set()
-    # for i in range(args.d):
-    #     next_todo = set()
-    #     for fid in todo:
-    #         done.add(fid)
-    #         for child in tree.add_children(fid):
-    #             next_todo.add(child)
-    #     todo = next_todo - done
-
-    
 
     # download spouses
     async def download_spouses(loop):
