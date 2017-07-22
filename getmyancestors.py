@@ -665,20 +665,22 @@ class Fam:
 
     # retrieve marriage notes
     def get_notes(self):
-        notes = fs.get_url('https://familysearch.org/platform/tree/couple-relationships/' + self.fid + '/notes.json')
-        if notes:
-            for n in notes['relationships'][0]['notes']:
-                self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
+        if self.fid:
+            notes = fs.get_url('https://familysearch.org/platform/tree/couple-relationships/' + self.fid + '/notes.json')
+            if notes:
+                for n in notes['relationships'][0]['notes']:
+                    self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
 
     # retrieve contributors
     def get_contributors(self):
-        temp = set()
-        data = fs.get_url('https://familysearch.org/platform/tree/persons/' + self.fid + '/changes.json')
-        for entries in data['entries']:
-            for contributors in entries['contributors']:
-                temp.add(contributors['name'])
-        if temp:
-            self.notes.add(Note('Contributeurs :\n' + '\n'.join(sorted(temp))))
+        if self.fid:
+            temp = set()
+            data = fs.get_url('https://familysearch.org/platform/tree/persons/' + self.fid + '/changes.json')
+            for entries in data['entries']:
+                for contributors in entries['contributors']:
+                    temp.add(contributors['name'])
+            if temp:
+                self.notes.add(Note('Contributeurs :\n' + '\n'.join(sorted(temp))))
 
     # print family information in GEDCOM format
     def print(self, file=sys.stdout):
@@ -736,17 +738,14 @@ class Tree:
             self.fam[(father, mother)] = Fam(father, mother)
 
     # add a children relationship (possibly incomplete) to the family tree
-    async def add_trio(self, father, mother, child):
-        f1 = self.loop.run_in_executor(None, self.add_indi, father)
-        f2 = self.loop.run_in_executor(None, self.add_indi, mother)
-        f3 = self.loop.run_in_executor(None, self.add_indi, child)
-        await f1
-        await f2
+    def add_trio(self, father, mother, child):
+        self.add_indi(father)
+        self.add_indi(mother)
+        self.add_indi(child)
         if father:
             self.indi[father].add_fams((father, mother))
         if mother:
             self.indi[mother].add_fams((father, mother))
-        await f3
         self.indi[child].add_famc((father, mother))
         self.add_fam(father, mother)
         self.fam[(father, mother)].add_child(child)
@@ -755,7 +754,7 @@ class Tree:
     def add_parents(self, fid):
         father, mother = self.indi[fid].get_parents(self.fs)
         if father or mother:
-            self.loop.run_until_complete(tree.add_trio(father, mother, fid))
+            tree.add_trio(father, mother, fid)
         return filter(None, (father, mother))
 
     # retrieve and add spouse relationships
@@ -776,7 +775,7 @@ class Tree:
         rels = self.indi[fid].get_children(self.fs)
         if rels:
             for father, mother, child in rels:
-                self.loop.run_until_complete(self.add_trio(father, mother, child))
+                self.add_trio(father, mother, child)
                 children.append(child)
         return children
 
@@ -864,6 +863,7 @@ if __name__ == '__main__':
         fs.get_url('https://familysearch.org/platform/tree/persons/' + fs.get_userid() + '/ordinances.json')
 
     time_count = time.time()
+    loop = asyncio.get_event_loop()
 
     # add list of starting individuals to the family tree
     todo = set(args.i if args.i else [fs.get_userid()])
@@ -871,33 +871,56 @@ if __name__ == '__main__':
         tree.add_indi(fid)
 
     # download ancestors
-    done = set()
-    for i in range(args.a):
-        next_todo = set()
-        for fid in todo:
-            done.add(fid)
-            for parent in tree.add_parents(fid):
-                next_todo.add(parent)
-        todo = next_todo - done
+    # for i in range(args.a):
+    #     next_todo = set()
+    #     for fid in todo:
+    #         done.add(fid)
+    #         for parent in tree.add_parents(fid):
+    #             next_todo.add(parent)
+    #     todo = next_todo - done
+
+    async def yolo(func, todo, n, loop):
+        futures = set()
+        done = set()
+        for i in range(n):
+            next_todo = set()
+            for fid in todo:
+                done.add(fid)
+                futures.add(loop.run_in_executor(None, func, fid))
+            for future in futures:
+                for parent in await future:
+                    next_todo.add(parent)
+            todo = next_todo - done
+
+    loop.run_until_complete(yolo(tree.add_parents, todo, args.a, loop))
 
     # download descendants
     todo = set(tree.indi.keys())
-    done = set()
-    for i in range(args.d):
-        next_todo = set()
-        for fid in todo:
-            done.add(fid)
-            for child in tree.add_children(fid):
-                next_todo.add(child)
-        todo = next_todo - done
+
+    loop.run_until_complete(yolo(tree.add_children, todo, args.d, loop))
+
+    # done = set()
+    # for i in range(args.d):
+    #     next_todo = set()
+    #     for fid in todo:
+    #         done.add(fid)
+    #         for child in tree.add_children(fid):
+    #             next_todo.add(child)
+    #     todo = next_todo - done
+
+    
 
     # download spouses
-    if args.m:
+    async def download_spouses(loop):
+        futures = set()
         todo = set(tree.indi.keys())
         for fid in todo:
-            tree.add_spouses(fid)
+            futures.add(loop.run_in_executor(None, tree.add_spouses, fid))
+        for future in futures:
+            await future
 
-    loop = asyncio.get_event_loop()
+    if args.m:
+        loop.run_until_complete(download_spouses(loop))
 
     # download ordinances, notes and contributors
     async def download_stuff(loop):
