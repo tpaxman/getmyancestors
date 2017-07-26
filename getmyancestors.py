@@ -346,10 +346,6 @@ class Ordinance():
                 self.date = data['date']['formal']
             if 'templeCode' in data:
                 self.temple_code = data['templeCode']
-            if 'father' in data and 'mother' in data:
-                famc = (data['father']['resourceId'], data['mother']['resourceId'])
-                if famc in tree.fam:
-                    self.famc = tree.fam[famc]
             if data['status'] == u'http://familysearch.org/v1/Completed':
                 self.status = 'COMPLETED'
             if data['status'] == u'http://familysearch.org/v1/Cancelled':
@@ -506,6 +502,7 @@ class Indi:
     # retrieve LDS ordinances
     def get_ordinances(self):
         res = []
+        famc = False
         url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/ordinances.json'
         data = fs.get_url(url)['persons'][0]['ordinances']
         if data:
@@ -518,9 +515,11 @@ class Indi:
                     self.endowment = Ordinance(o)
                 if o['type'] == u'http://lds.org/SealingChildToParents':
                     self.sealing_child = Ordinance(o)
+                    if 'father' in o and 'mother' in o:
+                        famc = (o['father']['resourceId'], o['mother']['resourceId'])
                 if o['type'] == u'http://lds.org/SealingToSpouse':
                     res.append(o)
-        return res
+        return res, famc
 
     # retrieve contributors
     def get_contributors(self):
@@ -754,7 +753,7 @@ class Tree:
     def add_parents(self, fid):
         father, mother = self.indi[fid].get_parents(self.fs)
         if father or mother:
-            tree.add_trio(father, mother, fid)
+            self.add_trio(father, mother, fid)
         return filter(None, (father, mother))
 
     # retrieve and add spouse relationships
@@ -781,7 +780,9 @@ class Tree:
 
     # retrieve ordinances
     def add_ordinances(self, fid):
-        ret = self.indi[fid].get_ordinances()
+        ret, famc = self.indi[fid].get_ordinances()
+        if famc and famc in self.fam:
+            self.indi[fid].sealing_child.famc = self.fam[famc]
         for o in ret:
             if (fid, o['spouse']['resourceId']) in self.fam:
                 self.fam[(fid, o['spouse']['resourceId'])].sealing_spouse = Ordinance(o)
