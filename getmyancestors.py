@@ -724,7 +724,6 @@ class Tree:
         self.fs = fs
         self.indi = dict()
         self.fam = dict()
-        self.loop = asyncio.get_event_loop()
 
     # add individual to the family tree
     def add_indi(self, fid):
@@ -890,7 +889,6 @@ if __name__ == '__main__':
     # download descendants
     todo = set(tree.indi.keys())
     loop.run_until_complete(download_tree(tree.add_children, todo, args.d, loop))
-
 
     # download spouses
     async def download_spouses(loop):
