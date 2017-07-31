@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
    mergemyancestors.py - Merge GEDCOM data from FamilySearch Tree
    Copyright (C) 2014-2016 Giulio Genovese (giulio.genovese@gmail.com)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
    getmyancestors.py - Retrieve GEDCOM data from FamilySearch Tree
    Copyright (C) 2014-2016 Giulio Genovese (giulio.genovese@gmail.com)
@@ -831,7 +832,7 @@ if __name__ == '__main__':
     parser.add_argument('-a', metavar='<INT>', type=int, default=4, help='Number of generations to ascend [4]')
     parser.add_argument('-d', metavar='<INT>', type=int, default=0, help='Number of generations to descend [0]')
     parser.add_argument('-m', action="store_true", default=False, help='Add spouses and couples information [False]')
-    parser.add_argument('-r', action="store_true", default=False, help='Add contributors in notes [False]')
+    parser.add_argument('-r', action="store_true", default=False, help='Add list of contributors in notes [False]')
     parser.add_argument('-c', action="store_true", default=False, help='Add LDS ordinances (need LDS account) [False]')
     parser.add_argument("-v", action="store_true", default=False, help="Increase output verbosity [False]")
     parser.add_argument('-t', metavar='<INT>', type=int, default=60, help='Timeout in seconds [60]')
@@ -862,7 +863,6 @@ if __name__ == '__main__':
     if args.c:
         fs.get_url('https://familysearch.org/platform/tree/persons/' + fs.get_userid() + '/ordinances.json')
 
-    time_count = time.time()
     loop = asyncio.get_event_loop()
 
     # add list of starting individuals to the family tree
@@ -923,5 +923,3 @@ if __name__ == '__main__':
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
     tree.print(args.o)
-
-    print(time.time() - time_count)
