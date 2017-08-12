@@ -35,9 +35,6 @@ except ImportError:
     sys.stderr.write('(run this in your terminal: "python3 -m pip install requests" or "python3 -m pip install --user requests")\n')
     exit(2)
 
-list_notes = set()
-list_sources = set()
-
 
 # FamilySearch session class
 class Session:
@@ -218,13 +215,14 @@ class Note:
 
     counter = 0
 
-    def __init__(self, text='', num=None):
+    def __init__(self, text='', tree=None, num=None):
         if num:
             self.num = num
         else:
             Note.counter += 1
             self.num = Note.counter
-        list_notes.add(self)
+        if tree:
+            tree.list_notes.add(self)
 
         self.text = text
 
@@ -239,13 +237,14 @@ class Source:
 
     counter = 0
 
-    def __init__(self, data=None, num=None):
+    def __init__(self, data=None, tree=None, num=None):
         if num:
             self.num = num
         else:
             Source.counter += 1
             self.num = Source.counter
-        list_sources.add(self)
+        if tree:
+            tree.list_sources.add(self)
 
         self.url = self.citation = self.title = self.fid = None
         self.notes = set()
@@ -261,14 +260,7 @@ class Source:
             if 'notes' in data:
                 for n in data['notes']:
                     if n['text']:
-                        self.notes.add(Note(n['text']))
-
-    def add_source(data=None):
-        if data:
-            for s in list_sources:
-                if s.fid == data['id']:
-                    return s
-            return Source(data)
+                        self.notes.add(Note(n['text'], tree))
 
     def print(self, file=sys.stdout):
         file.write('0 @S' + str(self.num) + '@ SOUR \n')
@@ -288,7 +280,7 @@ class Source:
 
 class Fact:
 
-    def __init__(self, data=None):
+    def __init__(self, data=None, tree=None):
         self.value = self.type = self.date = self.place = self.note = None
         if data:
             if 'value' in data:
@@ -300,12 +292,12 @@ class Fact:
             if 'place' in data:
                 self.place = data['place']['original']
             if 'changeMessage' in data['attribution']:
-                self.note = Note(data['attribution']['changeMessage'])
+                self.note = Note(data['attribution']['changeMessage'], tree)
 
 
 class Name:
 
-    def __init__(self, data=None):
+    def __init__(self, data=None, tree=None):
         self.given = ''
         self.surname = ''
         self.prefix = None
@@ -323,7 +315,7 @@ class Name:
                     if z['type'] == u'http://gedcomx.org/Suffix':
                         self.suffix = z['value']
             if 'changeMessage' in data['attribution']:
-                self.note = Note(data['attribution']['changeMessage'])
+                self.note = Note(data['attribution']['changeMessage'], tree)
 
     def print(self, file=sys.stdout, type=None):
         file.write('1 NAME ' + self.given + ' /' + self.surname + '/')
@@ -371,13 +363,14 @@ class Indi:
     counter = 0
 
     # initialize individual
-    def __init__(self, fid=None, fs=None, num=None):
+    def __init__(self, fid=None, tree=None, num=None):
         if num:
             self.num = num
         else:
             Indi.counter += 1
             self.num = Indi.counter
         self.fid = fid
+        self.tree = tree
         self.famc_fid = set()
         self.fams_fid = set()
         self.famc_num = set()
@@ -395,24 +388,24 @@ class Indi:
         self.aka = set()
         self.notes = set()
         self.sources = set()
-        if fid and fs:
+        if fid and tree and tree.fs:
             url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '.json'
-            data = fs.get_url(url)
+            data = tree.fs.get_url(url)
             if data:
                 x = data['persons'][0]
                 if x['names']:
                     for y in x['names']:
                         if y['preferred']:
-                            self.name = Name(y)
+                            self.name = Name(y, self.tree)
                         else:
                             if y['type'] == u'http://gedcomx.org/Nickname':
-                                self.nicknames.add(Name(y))
+                                self.nicknames.add(Name(y, self.tree))
                             if y['type'] == u'http://gedcomx.org/BirthName':
-                                self.birthnames.add(Name(y))
+                                self.birthnames.add(Name(y, self.tree))
                             if y['type'] == u'http://gedcomx.org/AlsoKnownAs':
-                                self.aka.add(Name(y))
+                                self.aka.add(Name(y, self.tree))
                             if y['type'] == u'http://gedcomx.org/MarriedName':
-                                self.married.add(Name(y))
+                                self.married.add(Name(y, self.tree))
                 if 'gender' in x:
                     if x['gender']['type'] == 'http://gedcomx.org/Male':
                         self.gender = 'M'
@@ -434,18 +427,18 @@ class Indi:
                         self.buridate = y['date']['original'] if 'date' in y and 'original' in y['date'] else None
                         self.buriplac = y['place']['original'] if 'place' in y and 'original' in y['place'] else None
                     if y['type'] == u'http://gedcomx.org/PhysicalDescription':
-                        self.physical_descriptions.add(Fact(y))
+                        self.physical_descriptions.add(Fact(y, self.tree))
                     if y['type'] == u'http://gedcomx.org/Occupation':
-                        self.occupations.add(Fact(y))
+                        self.occupations.add(Fact(y, self.tree))
                     if y['type'] == u'http://gedcomx.org/MilitaryService':
-                        self.military.add(Fact(y))
+                        self.military.add(Fact(y, self.tree))
                 if 'sources' in x:
                     for y in x['sources']:
-                        json = fs.get_url(y['links']['description']['href'])['sourceDescriptions'][0]
+                        json = tree.fs.get_url(y['links']['description']['href'])['sourceDescriptions'][0]
                         if 'changeMessage' in y['attribution']:
-                            self.sources.add((Source.add_source(json), y['attribution']['changeMessage']))
+                            self.sources.add((self.tree.add_source(json), y['attribution']['changeMessage']))
                         else:
-                            self.sources.add((Source(json),))
+                            self.sources.add((self.tree.add_source(json),))
         self.parents = None
         self.children = None
         self.spouses = None
@@ -461,10 +454,10 @@ class Indi:
             self.famc_fid.add(famc)
 
     # retrieve parents
-    def get_parents(self, fs):
+    def get_parents(self):
         if not self.parents:
             url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/parents.json'
-            data = fs.get_url(url)
+            data = self.tree.fs.get_url(url)
             if data:
                 x = data['childAndParentsRelationships'][0]
                 self.parents = (x['father']['resourceId'] if 'father' in x else None,
@@ -474,10 +467,10 @@ class Indi:
         return self.parents
 
     # retrieve children relationships
-    def get_children(self, fs):
+    def get_children(self):
         if not self.children:
             url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/children.json'
-            data = fs.get_url(url)
+            data = self.tree.fs.get_url(url)
             if data:
                 self.children = [(x['father']['resourceId'] if 'father' in x else None,
                                   x['mother']['resourceId'] if 'mother' in x else None,
@@ -485,27 +478,27 @@ class Indi:
         return self.children
 
     # retrieve spouse relationships
-    def get_spouses(self, fs):
+    def get_spouses(self):
         if not self.spouses:
             url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/spouses.json'
-            data = fs.get_url(url)
+            data = self.tree.fs.get_url(url)
             if data and 'relationships' in data:
                 self.spouses = [(x['person1']['resourceId'], x['person2']['resourceId'], x['id']) for x in data['relationships']]
         return self.spouses
 
     # retrieve individual notes
     def get_notes(self):
-        notes = fs.get_url('https://familysearch.org/platform/tree/persons/' + self.fid + '/notes.json')
+        notes = self.tree.fs.get_url('https://familysearch.org/platform/tree/persons/' + self.fid + '/notes.json')
         if notes:
             for n in notes['persons'][0]['notes']:
-                self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
+                self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n', self.tree))
 
     # retrieve LDS ordinances
     def get_ordinances(self):
         res = []
         famc = False
         url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/ordinances.json'
-        data = fs.get_url(url)['persons'][0]['ordinances']
+        data = self.tree.fs.get_url(url)['persons'][0]['ordinances']
         if data:
             for o in data:
                 if o['type'] == u'http://lds.org/Baptism':
@@ -525,12 +518,12 @@ class Indi:
     # retrieve contributors
     def get_contributors(self):
         temp = set()
-        data = fs.get_url('https://familysearch.org/platform/tree/persons/' + self.fid + '/changes.json')
+        data = self.tree.fs.get_url('https://familysearch.org/platform/tree/persons/' + self.fid + '/changes.json')
         for entries in data['entries']:
             for contributors in entries['contributors']:
                 temp.add(contributors['name'])
         if temp:
-            self.notes.add(Note('Contributeurs :\n' + '\n'.join(sorted(temp))))
+            self.notes.add(Note('Contributeurs :\n' + '\n'.join(sorted(temp)), self.tree))
 
     # print individual information in GEDCOM format
     def print(self, file=sys.stdout):
@@ -625,7 +618,7 @@ class Fam:
     counter = 0
 
     # initialize family
-    def __init__(self, husb=None, wife=None, num=None):
+    def __init__(self, husb=None, wife=None, tree=None, num=None):
         if num:
             self.num = num
         else:
@@ -633,6 +626,7 @@ class Fam:
             self.num = Fam.counter
         self.husb_fid = husb if husb else None
         self.wife_fid = wife if wife else None
+        self.tree = tree
         self.husb_num = self.wife_num = self.fid = None
         self.marriage_facts = set()
         self.sealing_spouse = None
@@ -647,40 +641,40 @@ class Fam:
             self.chil_fid.add(child)
 
     # retrieve and add marriage information
-    def add_marriage(self, fs, fid):
+    def add_marriage(self, fid):
         if not self.fid:
             self.fid = fid
             url = 'https://familysearch.org/platform/tree/couple-relationships/' + self.fid + '.json'
-            data = fs.get_url(url)
+            data = self.tree.fs.get_url(url)
             if data and 'facts' in data['relationships'][0]:
                 for x in data['relationships'][0]['facts']:
-                    self.marriage_facts.add(Fact(x))
+                    self.marriage_facts.add(Fact(x, self.tree))
             if data and 'sources' in data['relationships'][0]:
                 for y in data['relationships'][0]['sources']:
-                    json = fs.get_url(y['links']['description']['href'])['sourceDescriptions'][0]
+                    json = self.tree.fs.get_url(y['links']['description']['href'])['sourceDescriptions'][0]
                     if 'changeMessage' in y['attribution']:
-                        self.sources.add((Source.add_source(json), y['attribution']['changeMessage']))
+                        self.sources.add((self.tree.add_source(json), y['attribution']['changeMessage']))
                     else:
-                        self.sources.add((Source(json),))
+                        self.sources.add((self.tree.add_source(json),))
 
     # retrieve marriage notes
     def get_notes(self):
         if self.fid:
-            notes = fs.get_url('https://familysearch.org/platform/tree/couple-relationships/' + self.fid + '/notes.json')
+            notes = self.tree.fs.get_url('https://familysearch.org/platform/tree/couple-relationships/' + self.fid + '/notes.json')
             if notes:
                 for n in notes['relationships'][0]['notes']:
-                    self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n'))
+                    self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n', self.tree))
 
     # retrieve contributors
     def get_contributors(self):
         if self.fid:
             temp = set()
-            data = fs.get_url('https://familysearch.org/platform/tree/couple-relationships/' + self.fid + '/changes.json')
+            data = self.tree.fs.get_url('https://familysearch.org/platform/tree/couple-relationships/' + self.fid + '/changes.json')
             for entries in data['entries']:
                 for contributors in entries['contributors']:
                     temp.add(contributors['name'])
             if temp:
-                self.notes.add(Note('Contributeurs :\n' + '\n'.join(sorted(temp))))
+                self.notes.add(Note('Contributeurs :\n' + '\n'.join(sorted(temp)), self.tree))
 
     # print family information in GEDCOM format
     def print(self, file=sys.stdout):
@@ -725,16 +719,18 @@ class Tree:
         self.fs = fs
         self.indi = dict()
         self.fam = dict()
+        self.list_notes = set()
+        self.list_sources = set()
 
     # add individual to the family tree
     def add_indi(self, fid):
         if fid and fid not in self.indi:
-            self.indi[fid] = Indi(fid, self.fs)
+            self.indi[fid] = Indi(fid, self)
 
     # add family to the family tree
     def add_fam(self, father, mother):
         if not (father, mother) in self.fam:
-            self.fam[(father, mother)] = Fam(father, mother)
+            self.fam[(father, mother)] = Fam(father, mother, self)
 
     # add a children relationship (possibly incomplete) to the family tree
     def add_trio(self, father, mother, child):
@@ -751,14 +747,14 @@ class Tree:
 
     # retrieve and add parents relationships
     def add_parents(self, fid):
-        father, mother = self.indi[fid].get_parents(self.fs)
+        father, mother = self.indi[fid].get_parents()
         if father or mother:
             self.add_trio(father, mother, fid)
         return filter(None, (father, mother))
 
     # retrieve and add spouse relationships
     def add_spouses(self, fid):
-        rels = self.indi[fid].get_spouses(self.fs)
+        rels = self.indi[fid].get_spouses()
         if rels:
             for father, mother, relfid in rels:
                 self.add_indi(father)
@@ -766,12 +762,12 @@ class Tree:
                 self.indi[father].add_fams((father, mother))
                 self.indi[mother].add_fams((father, mother))
                 self.add_fam(father, mother)
-                self.fam[(father, mother)].add_marriage(self.fs, relfid)
+                self.fam[(father, mother)].add_marriage(relfid)
 
     # retrieve and add children relationships
     def add_children(self, fid):
         children = list()
-        rels = self.indi[fid].get_children(self.fs)
+        rels = self.indi[fid].get_children()
         if rels:
             for father, mother, child in rels:
                 self.add_trio(father, mother, child)
@@ -788,6 +784,14 @@ class Tree:
                 self.fam[(fid, o['spouse']['resourceId'])].sealing_spouse = Ordinance(o)
             elif (o['spouse']['resourceId'], fid) in self.fam:
                 self.fam[(o['spouse']['resourceId'], fid)].sealing_spouse = Ordinance(o)
+
+    def add_source(self, data=None):
+        if data:
+            for s in self.list_sources:
+                if s.fid == data['id']:
+                    return s
+            return Source(data, self)
+        return False
 
     def reset_num(self):
         for husb, wife in self.fam:
@@ -809,13 +813,13 @@ class Tree:
             self.indi[fid].print(file)
         for husb, wife in sorted(self.fam, key=lambda x: self.fam.__getitem__(x).num):
             self.fam[(husb, wife)].print(file)
-        sources = sorted(list_sources, key=lambda x: x.num)
+        sources = sorted(self.list_sources, key=lambda x: x.num)
         for i, s in enumerate(sources):
             if i > 0:
                 if s.num == sources[i - 1].num:
                     continue
             s.print(file)
-        notes = sorted(list_notes, key=lambda x: x.num)
+        notes = sorted(self.list_notes, key=lambda x: x.num)
         for i, n in enumerate(notes):
             if i > 0:
                 if n.num == notes[i - 1].num:
@@ -919,6 +923,17 @@ if __name__ == '__main__':
             await future
 
     loop.run_until_complete(download_stuff(loop))
+
+    # merge notes by text
+    tree.list_notes = sorted(tree.list_notes, key=lambda x: x.text)
+    for i, n in enumerate(tree.list_notes):
+        if i == 0:
+            n.num = 1
+            continue
+        if n.text == tree.list_notes[i - 1].text:
+            n.num = tree.list_notes[i - 1].num
+        else:
+            n.num = tree.list_notes[i - 1].num + 1
 
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()

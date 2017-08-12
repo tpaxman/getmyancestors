@@ -29,16 +29,17 @@ import sys
 import argparse
 
 # local import
-from getmyancestors import Indi, Fam, Tree, Name, Note, Fact, Source, Ordinance, list_notes, list_sources
+from getmyancestors import Indi, Fam, Tree, Name, Note, Fact, Source, Ordinance
 
 sys.path.append(os.path.dirname(sys.argv[0]))
 
 
 class Gedcom:
 
-    def __init__(self, file):
+    def __init__(self, file, tree):
         self.f = file
         self.num = None
+        self.tree = tree
         self.level = 0
         self.pointer = None
         self.tag = None
@@ -55,22 +56,22 @@ class Gedcom:
         while self.__get_line():
             if self.tag == 'INDI':
                 self.num = int(self.pointer[2:len(self.pointer) - 1])
-                self.indi[self.num] = Indi(num=self.num)
+                self.indi[self.num] = Indi(tree=self.tree, num=self.num)
                 self.__get_indi()
             elif self.tag == 'FAM':
                 self.num = int(self.pointer[2:len(self.pointer) - 1])
                 if self.num not in self.fam:
-                    self.fam[self.num] = Fam(num=self.num)
+                    self.fam[self.num] = Fam(tree=self.tree, num=self.num)
                 self.__get_fam()
             elif self.tag == 'NOTE':
                 self.num = int(self.pointer[2:len(self.pointer) - 1])
                 if self.num not in self.note:
-                    self.note[self.num] = Note(num=self.num)
+                    self.note[self.num] = Note(tree=self.tree, num=self.num)
                 self.__get_note()
             elif self.tag == 'SOUR':
                 self.num = int(self.pointer[2:len(self.pointer) - 1])
                 if self.num not in self.sour:
-                    self.sour[self.num] = Source(num=self.num)
+                    self.sour[self.num] = Source(tree=self.tree, num=self.num)
                 self.__get_source()
             else:
                 continue
@@ -127,7 +128,8 @@ class Gedcom:
                 self.indi[self.num].fid = self.data
             elif self.tag == 'NOTE':
                 num = int(self.data[2:len(self.data) - 1])
-                self.note[num] = Note(num=num)
+                if num not in self.note:
+                    self.note[num] = Note(tree=self.tree, num=num)
                 self.indi[self.num].notes.add(self.note[num])
             elif self.tag == 'SOUR':
                 self.indi[self.num].sources.add(self.__get_link_source())
@@ -149,7 +151,8 @@ class Gedcom:
                 self.fam[self.num].fid = self.data
             elif self.tag == 'NOTE':
                 num = int(self.data[2:len(self.data) - 1])
-                self.note[num] = Note(num=num)
+                if num not in self.note:
+                    self.note[num] = Note(tree=self.tree, num=num)
                 self.fam[self.num].notes.add(self.note[num])
             elif self.tag == 'SOUR':
                 self.fam[self.num].sources.add(self.__get_link_source())
@@ -182,7 +185,8 @@ class Gedcom:
                 self.indi[self.num].nicknames.add(nick)
             elif self.tag == 'NOTE':
                 num = int(self.data[2:len(self.data) - 1])
-                self.note[num] = Note(num=num)
+                if num not in self.note:
+                    self.note[num] = Note(tree=self.tree, num=num)
                 name.note = self.note[num]
         if not added:
             self.indi[self.num].birthnames.add(name)
@@ -237,8 +241,9 @@ class Gedcom:
                 fact.place = self.data
             elif self.tag == 'NOTE':
                 num = int(self.data[2:len(self.data) - 1])
-                self.note[num] = Note(num=num)
-                fact.note = (self.note[num])
+                if num not in self.note:
+                    self.note[num] = Note(tree=self.tree, num=num)
+                fact.note = self.note[num]
         self.flag = True
         return fact
 
@@ -258,8 +263,9 @@ class Gedcom:
                 fact.place = self.data
             elif self.tag == 'NOTE':
                 num = int(self.data[2:len(self.data) - 1])
-                self.note[num] = Note(num=num)
-                fact.note = (self.note[num])
+                if num not in self.note:
+                    self.note[num] = Note(tree=self.tree, num=num)
+                fact.note = self.note[num]
         self.flag = True
 
     def __get_source(self):
@@ -274,14 +280,15 @@ class Gedcom:
                 self.sour[self.num].fid = self.data
             elif self.tag == 'NOTE':
                 num = int(self.data[2:len(self.data) - 1])
-                self.note[num] = Note(num=num)
+                if num not in self.note:
+                    self.note[num] = Note(tree=self.tree, num=num)
                 self.sour[self.num].notes.add(self.note[num])
         self.flag = True
 
     def __get_link_source(self):
         num = int(self.data[2:len(self.data) - 1])
         if num not in self.sour:
-            self.sour[num] = Source(num=num)
+            self.sour[num] = Source(tree=self.tree, num=num)
         page = None
         while self.__get_line() and self.level > 1:
             if self.tag == 'PAGE':
@@ -313,7 +320,7 @@ class Gedcom:
             elif self.tag == 'FAMC':
                 num = int(self.data[2:len(self.data) - 1])
                 if num not in self.fam:
-                    self.fam[num] = Fam(num=num)
+                    self.fam[num] = Fam(tree=self.tree, num=num)
                 ordinance.famc = self.fam[num]
         self.flag = True
         return ordinance
@@ -360,14 +367,15 @@ if __name__ == '__main__':
 
     # read the GEDCOM data
     for file in args.i:
-        ged = Gedcom(file)
+        ged = Gedcom(file, tree)
 
         # add informations about individuals
         for num in ged.indi:
             fid = ged.indi[num].fid
             if fid not in tree.indi:
                 indi_counter += 1
-                tree.indi[fid] = Indi(num=indi_counter)
+                tree.indi[fid] = Indi(tree=tree, num=indi_counter)
+                tree.indi[fid].tree = tree
                 tree.indi[fid].fid = ged.indi[num].fid
             tree.indi[fid].fams_fid |= ged.indi[num].fams_fid
             tree.indi[fid].famc_fid |= ged.indi[num].famc_fid
@@ -401,7 +409,8 @@ if __name__ == '__main__':
             husb, wife = (ged.fam[num].husb_fid, ged.fam[num].wife_fid)
             if (husb, wife) not in tree.fam:
                 fam_counter += 1
-                tree.fam[(husb, wife)] = Fam(husb, wife, fam_counter)
+                tree.fam[(husb, wife)] = Fam(husb, wife, tree, fam_counter)
+                tree.fam[(husb, wife)].tree = tree
             tree.fam[(husb, wife)].chil_fid |= ged.fam[num].chil_fid
             tree.fam[(husb, wife)].fid = ged.fam[num].fid
             tree.fam[(husb, wife)].marriage_facts = ged.fam[num].marriage_facts
@@ -410,26 +419,26 @@ if __name__ == '__main__':
             tree.fam[(husb, wife)].sealing_spouse = ged.fam[num].sealing_spouse
 
     # merge notes by text
-    list_notes = sorted(list_notes, key=lambda x: x.text)
-    for i, n in enumerate(list_notes):
+    tree.list_notes = sorted(tree.list_notes, key=lambda x: x.text)
+    for i, n in enumerate(tree.list_notes):
         if i == 0:
             n.num = 1
             continue
-        if n.text == list_notes[i - 1].text:
-            n.num = list_notes[i - 1].num
+        if n.text == tree.list_notes[i - 1].text:
+            n.num = tree.list_notes[i - 1].num
         else:
-            n.num = list_notes[i - 1].num + 1
+            n.num = tree.list_notes[i - 1].num + 1
 
     # merge sources by fid
-    list_sources = sorted(list_sources, key=lambda x: x.fid)
-    for i, n in enumerate(list_sources):
+    tree.list_sources = sorted(tree.list_sources, key=lambda x: x.fid)
+    for i, n in enumerate(tree.list_sources):
         if i == 0:
             n.num = 1
             continue
-        if n.fid == list_sources[i - 1].fid:
-            n.num = list_sources[i - 1].num
+        if n.fid == tree.list_sources[i - 1].fid:
+            n.num = tree.list_sources[i - 1].num
         else:
-            n.num = list_sources[i - 1].num + 1
+            n.num = tree.list_sources[i - 1].num + 1
 
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
