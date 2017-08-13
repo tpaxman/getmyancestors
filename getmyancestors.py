@@ -222,9 +222,9 @@ class Note:
             Note.counter += 1
             self.num = Note.counter
         if tree:
-            tree.list_notes.add(self)
+            tree.notes.add(self)
 
-        self.text = text
+        self.text = text.strip()
 
     def print(self, file=sys.stdout):
         file.write('0 @N' + str(self.num) + '@ NOTE ' + self.text.replace('\n', '\n1 CONT ') + '\n')
@@ -244,7 +244,7 @@ class Source:
             Source.counter += 1
             self.num = Source.counter
         if tree:
-            tree.list_sources.add(self)
+            tree.sources.add(self)
 
         self.url = self.citation = self.title = self.fid = None
         self.notes = set()
@@ -523,7 +523,12 @@ class Indi:
             for contributors in entries['contributors']:
                 temp.add(contributors['name'])
         if temp:
-            self.notes.add(Note('Contributeurs :\n' + '\n'.join(sorted(temp)), self.tree))
+            text = 'Contributeurs :\n' + '\n'.join(sorted(temp))
+            for n in self.tree.notes:
+                if n.text == text:
+                    self.notes.add(n)
+                    return
+            self.notes.add(Note(text, self.tree))
 
     # print individual information in GEDCOM format
     def print(self, file=sys.stdout):
@@ -674,7 +679,12 @@ class Fam:
                 for contributors in entries['contributors']:
                     temp.add(contributors['name'])
             if temp:
-                self.notes.add(Note('Contributeurs :\n' + '\n'.join(sorted(temp)), self.tree))
+                text = 'Contributeurs :\n' + '\n'.join(sorted(temp))
+                for n in self.tree.notes:
+                    if n.text == text:
+                        self.notes.add(n)
+                        return
+                self.notes.add(Note(text, self.tree))
 
     # print family information in GEDCOM format
     def print(self, file=sys.stdout):
@@ -719,8 +729,8 @@ class Tree:
         self.fs = fs
         self.indi = dict()
         self.fam = dict()
-        self.list_notes = set()
-        self.list_sources = set()
+        self.notes = set()
+        self.sources = set()
 
     # add individual to the family tree
     def add_indi(self, fid):
@@ -785,9 +795,10 @@ class Tree:
             elif (o['spouse']['resourceId'], fid) in self.fam:
                 self.fam[(o['spouse']['resourceId'], fid)].sealing_spouse = Ordinance(o)
 
+    # Find source by fid
     def add_source(self, data=None):
         if data:
-            for s in self.list_sources:
+            for s in self.sources:
                 if s.fid == data['id']:
                     return s
             return Source(data, self)
@@ -813,13 +824,13 @@ class Tree:
             self.indi[fid].print(file)
         for husb, wife in sorted(self.fam, key=lambda x: self.fam.__getitem__(x).num):
             self.fam[(husb, wife)].print(file)
-        sources = sorted(self.list_sources, key=lambda x: x.num)
+        sources = sorted(self.sources, key=lambda x: x.num)
         for i, s in enumerate(sources):
             if i > 0:
                 if s.num == sources[i - 1].num:
                     continue
             s.print(file)
-        notes = sorted(self.list_notes, key=lambda x: x.num)
+        notes = sorted(self.notes, key=lambda x: x.num)
         for i, n in enumerate(notes):
             if i > 0:
                 if n.num == notes[i - 1].num:
@@ -923,17 +934,6 @@ if __name__ == '__main__':
             await future
 
     loop.run_until_complete(download_stuff(loop))
-
-    # merge notes by text
-    tree.list_notes = sorted(tree.list_notes, key=lambda x: x.text)
-    for i, n in enumerate(tree.list_notes):
-        if i == 0:
-            n.num = 1
-            continue
-        if n.text == tree.list_notes[i - 1].text:
-            n.num = tree.list_notes[i - 1].num
-        else:
-            n.num = tree.list_notes[i - 1].num + 1
 
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
