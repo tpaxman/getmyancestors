@@ -317,13 +317,13 @@ class Name:
             if 'changeMessage' in data['attribution']:
                 self.note = Note(data['attribution']['changeMessage'], tree)
 
-    def print(self, file=sys.stdout, type=None):
+    def print(self, file=sys.stdout, typ=None):
         file.write('1 NAME ' + self.given + ' /' + self.surname + '/')
         if self.suffix:
             file.write(' ' + self.suffix)
         file.write('\n')
-        if type:
-            file.write('2 TYPE ' + type + '\n')
+        if typ:
+            file.write('2 TYPE ' + typ + '\n')
         if self.prefix:
             file.write('2 NPFX ' + self.prefix + '\n')
         if self.note:
@@ -371,6 +371,7 @@ class Indi:
             self.num = Indi.counter
         self.fid = fid
         self.tree = tree
+        self.living = True
         self.famc_fid = set()
         self.fams_fid = set()
         self.famc_num = set()
@@ -393,6 +394,7 @@ class Indi:
             data = tree.fs.get_url(url)
             if data:
                 x = data['persons'][0]
+                self.living = x['living']
                 if x['names']:
                     for y in x['names']:
                         if y['preferred']:
@@ -563,6 +565,8 @@ class Indi:
                 file.write('2 DATE ' + self.deatdate + '\n')
             if self.deatplac:
                 file.write('2 PLAC ' + self.deatplac + '\n')
+        elif not self.living:
+            file.write('1 DEAT Y\n')
         if self.buridate or self.buriplac:
             file.write('1 BURI\n')
             if self.buridate:

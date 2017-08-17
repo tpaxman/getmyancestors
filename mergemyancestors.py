@@ -209,6 +209,7 @@ class Gedcom:
         self.flag = True
 
     def __get_deat(self):
+        self.indi[self.num].living = False
         while self.__get_line() and self.level > 1:
             if self.tag == 'DATE':
                 self.indi[self.num].deatdate = self.data
@@ -377,6 +378,7 @@ if __name__ == '__main__':
                 tree.indi[fid] = Indi(tree=tree, num=indi_counter)
                 tree.indi[fid].tree = tree
                 tree.indi[fid].fid = ged.indi[num].fid
+            tree.indi[fid].living = ged.indi[num].living
             tree.indi[fid].fams_fid |= ged.indi[num].fams_fid
             tree.indi[fid].famc_fid |= ged.indi[num].famc_fid
             tree.indi[fid].name = ged.indi[num].name
@@ -419,26 +421,26 @@ if __name__ == '__main__':
             tree.fam[(husb, wife)].sealing_spouse = ged.fam[num].sealing_spouse
 
     # merge notes by text
-    tree.list_notes = sorted(tree.list_notes, key=lambda x: x.text)
-    for i, n in enumerate(tree.list_notes):
+    tree.notes = sorted(tree.notes, key=lambda x: x.text)
+    for i, n in enumerate(tree.notes):
         if i == 0:
             n.num = 1
             continue
-        if n.text == tree.list_notes[i - 1].text:
-            n.num = tree.list_notes[i - 1].num
+        if n.text == tree.notes[i - 1].text:
+            n.num = tree.notes[i - 1].num
         else:
-            n.num = tree.list_notes[i - 1].num + 1
+            n.num = tree.notes[i - 1].num + 1
 
     # merge sources by fid
-    tree.list_sources = sorted(tree.list_sources, key=lambda x: x.fid)
-    for i, n in enumerate(tree.list_sources):
+    tree.sources = sorted(tree.sources, key=lambda x: x.fid)
+    for i, n in enumerate(tree.sources):
         if i == 0:
             n.num = 1
             continue
-        if n.fid == tree.list_sources[i - 1].fid:
-            n.num = tree.list_sources[i - 1].num
+        if n.fid == tree.sources[i - 1].fid:
+            n.num = tree.sources[i - 1].num
         else:
-            n.num = tree.list_sources[i - 1].num + 1
+            n.num = tree.sources[i - 1].num + 1
 
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
