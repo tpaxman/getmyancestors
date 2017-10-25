@@ -196,7 +196,7 @@ class Session:
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: HTTPError\n')
                 if 'message' in fr.json()['errors'][0] and fr.json()['errors'][0]['message'] == u'Unable to get ordinances.':
-                    self.logfile.write('Unable to get ordinances. Try without option -c.\n')
+                    self.logfile.write('Unable to get ordinances. Try with an LDS account or without option -c.\n')
                     exit()
                 time.sleep(self.timeout)
                 continue
@@ -242,8 +242,8 @@ class Source:
         else:
             Source.counter += 1
             self.num = Source.counter
-        if tree:
-            tree.sources.add(self)
+        if tree and data:
+            tree.sources[data['id']] = self
 
         self.url = self.citation = self.title = self.fid = None
         self.notes = set()
@@ -264,11 +264,11 @@ class Source:
     def print(self, file=sys.stdout):
         file.write('0 @S' + str(self.num) + '@ SOUR \n')
         if self.title:
-            file.write('1 TITL ' + self.title + '\n')
+            file.write('1 TITL ' + self.title.replace('\n', '\n2 CONT ') + '\n')
         if self.citation:
-            file.write('1 AUTH ' + self.citation + '\n')
+            file.write('1 AUTH ' + self.citation.replace('\n', '\n2 CONT ') + '\n')
         if self.url:
-            file.write('1 PUBL ' + self.url + '\n')
+            file.write('1 PUBL ' + self.url.replace('\n', '\n2 CONT ') + '\n')
         for n in self.notes:
             n.link(file, 1)
         file.write('1 REFN ' + self.fid + '\n')
@@ -292,6 +292,19 @@ class Fact:
                 self.place = data['place']['original']
             if 'changeMessage' in data['attribution']:
                 self.note = Note(data['attribution']['changeMessage'], tree)
+
+    def print(self, file=sys.stdout, key=None):
+        if key:
+            file.write('1 ' + key)
+            if self.value:
+                file.write(' ' + self.value)
+            file.write('\n')
+            if self.date:
+                file.write('2 DATE ' + self.date + '\n')
+            if self.place:
+                file.write('2 PLAC ' + self.place + '\n')
+            if self.note:
+                self.note.link(file, 2)
 
 
 class Name:
@@ -573,13 +586,7 @@ class Indi:
             if self.buriplac:
                 file.write('2 PLAC ' + self.buriplac + '\n')
         for o in self.physical_descriptions:
-            file.write('1 DSCR ' + o.value + '\n')
-            if o.date:
-                file.write('2 DATE ' + o.date + '\n')
-            if o.place:
-                file.write('2 PLAC ' + o.place + '\n')
-            if o.note:
-                o.note.link(file, 2)
+            o.print(file, 'DSCR')
         if self.baptism:
             file.write('1 BAPL\n')
             self.baptism.print(file)
@@ -597,21 +604,9 @@ class Indi:
         for num in self.famc_num:
             file.write('1 FAMC @F' + str(num) + '@\n')
         for o in self.occupations:
-            file.write('1 OCCU ' + o.value + '\n')
-            if o.date:
-                file.write('2 DATE ' + o.date + '\n')
-            if o.place:
-                file.write('2 PLAC ' + o.place + '\n')
-            if o.note:
-                o.note.link(file, 2)
+            o.print(file, 'OCCU')
         for o in self.military:
-            file.write('1 _MILT ' + o.value + '\n')
-            if o.date:
-                file.write('2 DATE ' + o.date + '\n')
-            if o.place:
-                file.write('2 PLAC ' + o.place + '\n')
-            if o.note:
-                o.note.link(file, 2)
+            o.print(file, '_MILT')
         file.write('1 _FSFTID ' + self.fid + '\n')
         for o in self.notes:
             o.link(file)
@@ -699,20 +694,17 @@ class Fam:
         for num in self.chil_num:
             file.write('1 CHIL @I' + str(num) + '@\n')
         for o in self.marriage_facts:
+            key = ''
             if o.type == u'http://gedcomx.org/Marriage':
-                file.write('1 MARR\n')
+                key = 'MARR'
             if o.type == u'http://gedcomx.org/Divorce':
-                file.write('1 DIV\n')
+                key = 'DIV'
             if o.type == u'http://gedcomx.org/Annulment':
-                file.write('1 ANUL\n')
+                key = 'ANUL'
             if o.type == u'http://gedcomx.org/CommonLawMarriage':
-                file.write('1 _COML\n')
-            if o.date:
-                file.write('2 DATE ' + o.date + '\n')
-            if o.place:
-                file.write('2 PLAC ' + o.place + '\n')
-            if o.note:
-                file.write('2 NOTE @N' + str(o.note.num) + '@\n')
+                key = 'COML'
+            if key:
+                o.print(file, key)
         if self.sealing_spouse:
             file.write('1 SLGS\n')
             self.sealing_spouse.print(file)
@@ -733,7 +725,7 @@ class Tree:
         self.indi = dict()
         self.fam = dict()
         self.notes = set()
-        self.sources = set()
+        self.sources = dict()
 
     # add individual to the family tree
     def add_indi(self, fid):
@@ -801,9 +793,8 @@ class Tree:
     # Find source by fid
     def add_source(self, data=None):
         if data:
-            for s in self.sources:
-                if s.fid == data['id']:
-                    return s
+            if data['id'] in self.sources:
+                return self.sources[data['id']]
             return Source(data, self)
         return False
 
@@ -827,11 +818,8 @@ class Tree:
             self.indi[fid].print(file)
         for husb, wife in sorted(self.fam, key=lambda x: self.fam.__getitem__(x).num):
             self.fam[(husb, wife)].print(file)
-        sources = sorted(self.sources, key=lambda x: x.num)
-        for i, s in enumerate(sources):
-            if i > 0:
-                if s.num == sources[i - 1].num:
-                    continue
+        sources = sorted(self.sources.values(), key=lambda x: x.num)
+        for s in sources:
             s.print(file)
         notes = sorted(self.notes, key=lambda x: x.num)
         for i, n in enumerate(notes):

@@ -71,7 +71,7 @@ class Gedcom:
             elif self.tag == 'SOUR':
                 self.num = int(self.pointer[2:len(self.pointer) - 1])
                 if self.num not in self.sour:
-                    self.sour[self.num] = Source(tree=self.tree, num=self.num)
+                    self.sour[self.num] = Source(num=self.num)
                 self.__get_source()
             else:
                 continue
@@ -279,6 +279,10 @@ class Gedcom:
                 self.sour[self.num].url = self.data
             elif self.tag == 'REFN':
                 self.sour[self.num].fid = self.data
+                if self.data in self.tree.sources:
+                    self.sour[self.num] = self.tree.sources[self.data]
+                else:
+                    self.tree.sources[self.data] = self.sour[self.num]
             elif self.tag == 'NOTE':
                 num = int(self.data[2:len(self.data) - 1])
                 if num not in self.note:
@@ -289,7 +293,7 @@ class Gedcom:
     def __get_link_source(self):
         num = int(self.data[2:len(self.data) - 1])
         if num not in self.sour:
-            self.sour[num] = Source(tree=self.tree, num=num)
+            self.sour[num] = Source(num=num)
         page = None
         while self.__get_line() and self.level > 1:
             if self.tag == 'PAGE':
@@ -430,17 +434,6 @@ if __name__ == '__main__':
             n.num = tree.notes[i - 1].num
         else:
             n.num = tree.notes[i - 1].num + 1
-
-    # merge sources by fid
-    tree.sources = sorted(tree.sources, key=lambda x: x.fid)
-    for i, n in enumerate(tree.sources):
-        if i == 0:
-            n.num = 1
-            continue
-        if n.fid == tree.sources[i - 1].fid:
-            n.num = tree.sources[i - 1].num
-        else:
-            n.num = tree.sources[i - 1].num + 1
 
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
