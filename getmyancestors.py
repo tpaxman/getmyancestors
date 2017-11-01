@@ -221,7 +221,7 @@ class Note:
             Note.counter += 1
             self.num = Note.counter
         if tree:
-            tree.notes.add(self)
+            tree.notes.append(self)
 
         self.text = text.strip()
 
@@ -724,7 +724,7 @@ class Tree:
         self.fs = fs
         self.indi = dict()
         self.fam = dict()
-        self.notes = set()
+        self.notes = list()
         self.sources = dict()
 
     # add individual to the family tree
