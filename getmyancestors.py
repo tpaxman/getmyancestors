@@ -538,8 +538,7 @@ class Indi:
                 temp.add(contributors['name'])
         if temp:
             text = 'Contributeurs :\n' + '\n'.join(sorted(temp))
-            notes = self.tree.notes
-            for n in notes:
+            for n in self.tree.notes:
                 if n.text == text:
                     self.notes.add(n)
                     return
@@ -679,8 +678,7 @@ class Fam:
                     temp.add(contributors['name'])
             if temp:
                 text = 'Contributeurs :\n' + '\n'.join(sorted(temp))
-                notes = self.tree.notes
-                for n in notes:
+                for n in self.tree.notes:
                     if n.text == text:
                         self.notes.add(n)
                         return
