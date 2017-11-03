@@ -173,7 +173,7 @@ class Session:
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
                 # r = requests.get(url, cookies = { 's_vi': self.s_vi, 'fssessionid' : self.fssessionid }, timeout = self.timeout)
-                fr = requests.get(url, cookies={'fssessionid': self.fssessionid}, timeout=self.timeout)
+                r = requests.get(url, cookies={'fssessionid': self.fssessionid}, timeout=self.timeout)
             except requests.exceptions.ReadTimeout:
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Read timed out\n')
@@ -184,23 +184,23 @@ class Session:
                 time.sleep(self.timeout)
                 continue
             if self.verbose:
-                self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Status code: ' + str(fr.status_code) + '\n')
-            if fr.status_code == 204 or fr.status_code == 410:
+                self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Status code: ' + str(r.status_code) + '\n')
+            if r.status_code == 204 or r.status_code == 410:
                 return None
-            if fr.status_code == 401:
+            if r.status_code == 401:
                 self.login()
                 continue
             try:
-                fr.raise_for_status()
+                r.raise_for_status()
             except requests.exceptions.HTTPError:
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: HTTPError\n')
-                if 'message' in fr.json()['errors'][0] and fr.json()['errors'][0]['message'] == u'Unable to get ordinances.':
+                if r.status_code == 403 and 'message' in r.json()['errors'][0] and r.json()['errors'][0]['message'] == u'Unable to get ordinances.':
                     self.logfile.write('Unable to get ordinances. Try with an LDS account or without option -c.\n')
                     exit()
                 time.sleep(self.timeout)
                 continue
-            return fr.json()
+            return r.json()
 
     # retrieve FamilySearch current user ID
     def get_userid(self):
