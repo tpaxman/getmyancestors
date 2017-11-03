@@ -505,7 +505,9 @@ class Indi:
         notes = self.tree.fs.get_url('https://familysearch.org/platform/tree/persons/' + self.fid + '/notes.json')
         if notes:
             for n in notes['persons'][0]['notes']:
-                self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n', self.tree))
+                text_note = '===' + n['subject'] + '===\n' if 'subject' in n else ''
+                text_note += n['text'] + '\n' if 'text' in n else ''
+                self.notes.add(Note(text_note, self.tree))
 
     # retrieve LDS ordinances
     def get_ordinances(self):
@@ -666,7 +668,9 @@ class Fam:
             notes = self.tree.fs.get_url('https://familysearch.org/platform/tree/couple-relationships/' + self.fid + '/notes.json')
             if notes:
                 for n in notes['relationships'][0]['notes']:
-                    self.notes.add(Note('===' + n['subject'] + '===\n' + n['text'] + '\n', self.tree))
+                    text_note = '===' + n['subject'] + '===\n' if 'subject' in n else ''
+                    text_note += n['text'] + '\n' if 'text' in n else ''
+                    self.notes.add(Note(text_note, self.tree))
 
     # retrieve contributors
     def get_contributors(self):
