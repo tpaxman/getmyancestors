@@ -448,10 +448,12 @@ class Indi:
                         self.military.add(Fact(y, self.tree))
                 if 'sources' in x:
                     for y in x['sources']:
-                        if 'changeMessage' in y['attribution']:
-                            self.sources.add((self.tree.add_source(y['descriptionId']), y['attribution']['changeMessage']))
-                        else:
-                            self.sources.add((self.tree.add_source(y['descriptionId']),))
+                        source = self.tree.add_source(y['descriptionId'])
+                        if source:
+                            if 'changeMessage' in y['attribution']:
+                                self.sources.add((source, y['attribution']['changeMessage']))
+                            else:
+                                self.sources.add((source,))
         self.parents = None
         self.children = None
         self.spouses = None
@@ -655,10 +657,12 @@ class Fam:
                     self.marriage_facts.add(Fact(x, self.tree))
             if data and 'sources' in data['relationships'][0]:
                 for y in data['relationships'][0]['sources']:
-                    if 'changeMessage' in y['attribution']:
-                        self.sources.add((self.tree.add_source(y['descriptionId']), y['attribution']['changeMessage']))
-                    else:
-                        self.sources.add((self.tree.add_source(y['descriptionId']),))
+                    source = self.tree.add_source(y['descriptionId'])
+                    if source:
+                        if 'changeMessage' in y['attribution']:
+                            self.sources.add((source, y['attribution']['changeMessage']))
+                        else:
+                            self.sources.add((source,))
 
     # retrieve marriage notes
     def get_notes(self):
@@ -797,7 +801,9 @@ class Tree:
         if fid:
             if fid in self.sources:
                 return self.sources[fid]
-            return Source(self.fs.get_url('https://familysearch.org/platform/sources/descriptions/' + fid + '.json')['sourceDescriptions'][0], self)
+            data = self.fs.get_url('https://familysearch.org/platform/sources/descriptions/' + fid + '.json')
+            if data:
+                return Source(data['sourceDescriptions'][0], self)
         return False
 
     def reset_num(self):
