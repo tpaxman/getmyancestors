@@ -446,6 +446,8 @@ class Indi:
                         self.occupations.add(Fact(y, self.tree))
                     if y['type'] == u'http://gedcomx.org/MilitaryService':
                         self.military.add(Fact(y, self.tree))
+                    if y['type'] == u'http://familysearch.org/v1/LifeSketch':
+                        self.notes.add(Note('=== Life Sketch ===\n' + y['value'], self.tree))
                 if 'sources' in x:
                     for y in x['sources']:
                         source = self.tree.add_source(y['descriptionId'])
@@ -540,7 +542,7 @@ class Indi:
             for contributors in entries['contributors']:
                 temp.add(contributors['name'])
         if temp:
-            text = 'Contributeurs :\n' + '\n'.join(sorted(temp))
+            text = '=== Contributors ===\n' + '\n'.join(sorted(temp))
             for n in self.tree.notes:
                 if n.text == text:
                     self.notes.add(n)
@@ -683,7 +685,7 @@ class Fam:
                 for contributors in entries['contributors']:
                     temp.add(contributors['name'])
             if temp:
-                text = 'Contributeurs :\n' + '\n'.join(sorted(temp))
+                text = '=== Contributors ===\n' + '\n'.join(sorted(temp))
                 for n in self.tree.notes:
                     if n.text == text:
                         self.notes.add(n)
