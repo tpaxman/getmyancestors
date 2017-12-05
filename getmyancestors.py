@@ -306,6 +306,23 @@ class Fact:
             if self.note:
                 self.note.link(file, 2)
 
+class Memorie:
+
+    def __init__(self, data=None, tree=None):
+        self.description = self.url = None
+        if data and 'links' in data:
+            self.url = data['links']['alternate'][0]['href']
+            if 'titles' in data:
+                self.description = data['titles'][0]['value']
+            if 'descriptions' in data:
+                self.description += '\n' + data['descriptions'][0]['value']
+
+    def print(self, file=sys.stdout):
+        file.write('1 OBJE\n2 FORM URL\n')
+        if self.description:
+            file.write('2 TITL ' + self.description.replace('\n', '\n1 CONT ') + '\n')
+        if self.url:
+            file.write('2 FILE ' + self.url + '\n')
 
 class Name:
 
@@ -401,6 +418,7 @@ class Indi:
         self.aka = set()
         self.notes = set()
         self.sources = set()
+        self.memories = set()
         if fid and tree and tree.fs:
             url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '.json'
             data = tree.fs.get_url(url)
@@ -456,6 +474,13 @@ class Indi:
                                 self.sources.add((source, y['attribution']['changeMessage']))
                             else:
                                 self.sources.add((source,))
+                if 'evidence' in x:
+                    url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/memories.json'
+                    data = tree.fs.get_url(url)
+                    if data and 'sourceDescriptions' in data:
+                        for y in data['sourceDescriptions']:
+                            self.memories.add(Memorie(y, tree))
+
         self.parents = None
         self.children = None
         self.spouses = None
@@ -608,6 +633,8 @@ class Indi:
             file.write('1 FAMS @F' + str(num) + '@\n')
         for num in self.famc_num:
             file.write('1 FAMC @F' + str(num) + '@\n')
+        for o in self.memories:
+            o.print(file)
         for o in self.occupations:
             o.print(file, 'OCCU')
         for o in self.military:
