@@ -251,7 +251,7 @@ class Source:
         if data:
             self.fid = data['id']
             if 'about' in data:
-                self.url = data['about']
+                self.url = data['about'].replace('familysearch.org/platform/memories/memories', 'www.familysearch.org/photos/artifacts')
             if 'citations' in data:
                 self.citation = data['citations'][0]['value']
             if data['titles']:
