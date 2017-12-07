@@ -308,19 +308,20 @@ class Fact:
 
 class Memorie:
 
-    def __init__(self, data=None, tree=None):
+    def __init__(self, data=None):
         self.description = self.url = None
         if data and 'links' in data:
             self.url = data['links']['alternate'][0]['href']
             if 'titles' in data:
                 self.description = data['titles'][0]['value']
             if 'descriptions' in data:
-                self.description = (self.description or '') + '\n' + data['descriptions'][0]['value']
+                self.description = ('' if not self.description else self.description + '\n') + data['descriptions'][0]['value']
+                # self.description = (self.description or '') + '\n' + data['descriptions'][0]['value']
 
     def print(self, file=sys.stdout):
         file.write('1 OBJE\n2 FORM URL\n')
         if self.description:
-            file.write('2 TITL ' + self.description.replace('\n', '\n1 CONT ') + '\n')
+            file.write('2 TITL ' + self.description.replace('\n', '\n2 CONT ') + '\n')
         if self.url:
             file.write('2 FILE ' + self.url + '\n')
 
@@ -479,7 +480,7 @@ class Indi:
                     data = tree.fs.get_url(url)
                     if data and 'sourceDescriptions' in data:
                         for y in data['sourceDescriptions']:
-                            self.memories.add(Memorie(y, tree))
+                            self.memories.add(Memorie(y))
 
         self.parents = None
         self.children = None

@@ -29,7 +29,7 @@ import sys
 import argparse
 
 # local import
-from getmyancestors import Indi, Fam, Tree, Name, Note, Fact, Source, Ordinance
+from getmyancestors import Indi, Fam, Tree, Name, Note, Fact, Source, Ordinance, Memorie
 
 sys.path.append(os.path.dirname(sys.argv[0]))
 
@@ -133,6 +133,8 @@ class Gedcom:
                 self.indi[self.num].notes.add(self.note[num])
             elif self.tag == 'SOUR':
                 self.indi[self.num].sources.add(self.__get_link_source())
+            elif self.tag == 'OBJE':
+                self.indi[self.num].memories.add(self.__get_memorie())
         self.flag = True
 
     def __get_fam(self):
@@ -269,14 +271,24 @@ class Gedcom:
                 fact.note = self.note[num]
         self.flag = True
 
+    def __get_text(self):
+        text = self.data
+        while self.__get_line():
+            if self.tag == 'CONT':
+                text += '\n' + self.data
+            else:
+                break
+        self.flag = True
+        return text
+
     def __get_source(self):
         while self.__get_line() and self.level > 0:
             if self.tag == 'TITL':
-                self.sour[self.num].title = self.data
+                self.sour[self.num].title = self.__get_text()
             elif self.tag == 'AUTH':
-                self.sour[self.num].citation = self.data
+                self.sour[self.num].citation = self.__get_text()
             elif self.tag == 'PUBL':
-                self.sour[self.num].url = self.data
+                self.sour[self.num].url = self.__get_text()
             elif self.tag == 'REFN':
                 self.sour[self.num].fid = self.data
                 if self.data in self.tree.sources:
@@ -297,20 +309,26 @@ class Gedcom:
         page = None
         while self.__get_line() and self.level > 1:
             if self.tag == 'PAGE':
-                page = self.data
-            if self.tag == 'CONT':
-                page += '\n' + self.data
+                page = self.__get_text()
         self.flag = True
         if page:
             return (self.sour[num], page)
         else:
             return (self.sour[num],)
 
+    def __get_memorie(self):
+        memorie = Memorie()
+        pdb = False
+        while self.__get_line() and self.level > 1:
+            if self.tag == 'TITL':
+                memorie.description = self.__get_text()
+            elif self.tag == 'FILE':
+                memorie.url = self.data
+        self.flag = True
+        return memorie
+
     def __get_note(self):
-        self.note[self.num].text = self.data
-        while self.__get_line() and self.level > 0:
-            if self.tag == 'CONT':
-                self.note[self.num].text += '\n' + self.data
+        self.note[self.num].text = self.__get_text()
         self.flag = True
 
     def __get_ordinance(self):
@@ -404,6 +422,7 @@ if __name__ == '__main__':
             tree.indi[fid].military = ged.indi[num].military
             tree.indi[fid].notes = ged.indi[num].notes
             tree.indi[fid].sources = ged.indi[num].sources
+            tree.indi[fid].memories = ged.indi[num].memories
             tree.indi[fid].baptism = ged.indi[num].baptism
             tree.indi[fid].confirmation = ged.indi[num].confirmation
             tree.indi[fid].endowment = ged.indi[num].endowment
