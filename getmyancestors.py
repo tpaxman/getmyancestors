@@ -315,7 +315,7 @@ class Memorie:
             if 'titles' in data:
                 self.description = data['titles'][0]['value']
             if 'descriptions' in data:
-                self.description += '\n' + data['descriptions'][0]['value']
+                self.description = (self.description or '') + '\n' + data['descriptions'][0]['value']
 
     def print(self, file=sys.stdout):
         file.write('1 OBJE\n2 FORM URL\n')
