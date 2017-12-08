@@ -195,9 +195,13 @@ class Session:
             except requests.exceptions.HTTPError:
                 if self.verbose:
                     self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: HTTPError\n')
-                if r.status_code == 403 and 'message' in r.json()['errors'][0] and r.json()['errors'][0]['message'] == u'Unable to get ordinances.':
-                    self.logfile.write('Unable to get ordinances. Try with an LDS account or without option -c.\n')
-                    exit()
+                if r.status_code == 403:
+                    if 'message' in r.json()['errors'][0] and r.json()['errors'][0]['message'] == u'Unable to get ordinances.':
+                        self.logfile.write('Unable to get ordinances. Try with an LDS account or without option -c.\n')
+                        exit()
+                    else:
+                        self.logfile.write('Warning code 403 link: ' + url + ' ' + r.json()['errors'][0]['message'] or '')
+                        return None
                 time.sleep(self.timeout)
                 continue
             return r.json()
