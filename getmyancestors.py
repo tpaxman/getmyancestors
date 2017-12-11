@@ -44,6 +44,7 @@ class Session:
         self.verbose = verbose
         self.logfile = logfile
         self.timeout = timeout
+        self.fid = None
         self.login()
 
     # retrieve FamilySearch session ID (https://familysearch.org/developers/docs/guides/oauth2)
@@ -208,9 +209,11 @@ class Session:
 
     # retrieve FamilySearch current user ID
     def get_userid(self):
-        url = 'https://familysearch.org/platform/users/current.json'
-        data = self.get_url(url)
-        return data['users'][0]['personId'] if data else None
+        if not self.fid:
+            url = 'https://familysearch.org/platform/users/current.json'
+            data = self.get_url(url)
+            self.fid = data['users'][0]['personId'] if data else None
+        return self.fid
 
 
 # some GEDCOM objects
@@ -364,7 +367,7 @@ class Name:
             self.note.link(file, 2)
 
 
-class Ordinance():
+class Ordinance:
 
     def __init__(self, data=None):
         self.date = self.temple_code = self.status = self.famc = None
@@ -425,7 +428,7 @@ class Indi:
         self.sources = set()
         self.memories = set()
         if fid and tree and tree.fs:
-            url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '.json'
+            url = 'https://familysearch.org/platform/tree/persons/%s.json' % self.fid
             data = tree.fs.get_url(url)
             if data:
                 x = data['persons'][0]
@@ -480,7 +483,7 @@ class Indi:
                             else:
                                 self.sources.add((source,))
                 if 'evidence' in x:
-                    url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/memories.json'
+                    url = 'https://familysearch.org/platform/tree/persons/%s/memories.json' % self.fid
                     data = tree.fs.get_url(url)
                     if data and 'sourceDescriptions' in data:
                         for y in data['sourceDescriptions']:
@@ -503,7 +506,7 @@ class Indi:
     # retrieve parents
     def get_parents(self):
         if not self.parents:
-            url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/parents.json'
+            url = 'https://familysearch.org/platform/tree/persons/%s/parents.json' % self.fid
             data = self.tree.fs.get_url(url)
             if data:
                 x = data['childAndParentsRelationships'][0]
@@ -516,7 +519,7 @@ class Indi:
     # retrieve children relationships
     def get_children(self):
         if not self.children:
-            url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/children.json'
+            url = 'https://familysearch.org/platform/tree/persons/%s/children.json' % self.fid
             data = self.tree.fs.get_url(url)
             if data:
                 self.children = [(x['father']['resourceId'] if 'father' in x else None,
@@ -527,7 +530,7 @@ class Indi:
     # retrieve spouse relationships
     def get_spouses(self):
         if not self.spouses:
-            url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/spouses.json'
+            url = 'https://familysearch.org/platform/tree/persons/%s/spouses.json' % self.fid
             data = self.tree.fs.get_url(url)
             if data and 'relationships' in data:
                 self.spouses = [(x['person1']['resourceId'], x['person2']['resourceId'], x['id']) for x in data['relationships']]
@@ -535,7 +538,7 @@ class Indi:
 
     # retrieve individual notes
     def get_notes(self):
-        notes = self.tree.fs.get_url('https://familysearch.org/platform/tree/persons/' + self.fid + '/notes.json')
+        notes = self.tree.fs.get_url('https://familysearch.org/platform/tree/persons/%s/notes.json' % self.fid)
         if notes:
             for n in notes['persons'][0]['notes']:
                 text_note = '===' + n['subject'] + '===\n' if 'subject' in n else ''
@@ -546,7 +549,7 @@ class Indi:
     def get_ordinances(self):
         res = []
         famc = False
-        url = 'https://familysearch.org/platform/tree/persons/' + self.fid + '/ordinances.json'
+        url = 'https://familysearch.org/platform/tree/persons/%s/ordinances.json' % self.fid
         data = self.tree.fs.get_url(url)['persons'][0]['ordinances']
         if data:
             for o in data:
@@ -567,7 +570,7 @@ class Indi:
     # retrieve contributors
     def get_contributors(self):
         temp = set()
-        data = self.tree.fs.get_url('https://familysearch.org/platform/tree/persons/' + self.fid + '/changes.json')
+        data = self.tree.fs.get_url('https://familysearch.org/platform/tree/persons/%s/changes.json' % self.fid)
         for entries in data['entries']:
             for contributors in entries['contributors']:
                 temp.add(contributors['name'])
@@ -684,7 +687,7 @@ class Fam:
     def add_marriage(self, fid):
         if not self.fid:
             self.fid = fid
-            url = 'https://familysearch.org/platform/tree/couple-relationships/' + self.fid + '.json'
+            url = 'https://familysearch.org/platform/tree/couple-relationships/%s.json' % self.fid
             data = self.tree.fs.get_url(url)
             if data and 'facts' in data['relationships'][0]:
                 for x in data['relationships'][0]['facts']:
@@ -701,7 +704,7 @@ class Fam:
     # retrieve marriage notes
     def get_notes(self):
         if self.fid:
-            notes = self.tree.fs.get_url('https://familysearch.org/platform/tree/couple-relationships/' + self.fid + '/notes.json')
+            notes = self.tree.fs.get_url('https://familysearch.org/platform/tree/couple-relationships/%s/notes.json' % self.fid)
             if notes:
                 for n in notes['relationships'][0]['notes']:
                     text_note = '===' + n['subject'] + '===\n' if 'subject' in n else ''
@@ -712,7 +715,7 @@ class Fam:
     def get_contributors(self):
         if self.fid:
             temp = set()
-            data = self.tree.fs.get_url('https://familysearch.org/platform/tree/couple-relationships/' + self.fid + '/changes.json')
+            data = self.tree.fs.get_url('https://familysearch.org/platform/tree/couple-relationships/%s/changes.json' % self.fid)
             for entries in data['entries']:
                 for contributors in entries['contributors']:
                     temp.add(contributors['name'])
@@ -742,7 +745,7 @@ class Fam:
             if o.type == u'http://gedcomx.org/Annulment':
                 key = 'ANUL'
             if o.type == u'http://gedcomx.org/CommonLawMarriage':
-                key = 'COML'
+                key = '_COML'
             if key:
                 o.print(file, key)
         if self.sealing_spouse:
@@ -835,7 +838,7 @@ class Tree:
         if fid:
             if fid in self.sources:
                 return self.sources[fid]
-            data = self.fs.get_url('https://familysearch.org/platform/sources/descriptions/' + fid + '.json')
+            data = self.fs.get_url('https://familysearch.org/platform/sources/descriptions/%s.json' % fid)
             if data:
                 return Source(data['sourceDescriptions'][0], self)
         return False
@@ -909,7 +912,7 @@ if __name__ == '__main__':
 
     # check LDS account
     if args.c:
-        fs.get_url('https://familysearch.org/platform/tree/persons/' + fs.get_userid() + '/ordinances.json')
+        fs.get_url('https://familysearch.org/platform/tree/persons/%s/ordinances.json' % fs.get_userid())
 
     loop = asyncio.get_event_loop()
 
