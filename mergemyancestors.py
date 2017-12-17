@@ -29,9 +29,14 @@ import sys
 import argparse
 
 # local import
-from getmyancestors import Indi, Fam, Tree, Name, Note, Fact, Source, Ordinance, Memorie
+from getmyancestors import FACT_TAGS, Indi, Fam, Tree, Name, Note, Fact, Source, Ordinance, Memorie
 
 sys.path.append(os.path.dirname(sys.argv[0]))
+
+FACT_TYPES = dict()
+
+for key, value in FACT_TAGS.items():
+    FACT_TYPES[value] = key
 
 
 class Gedcom:
@@ -102,16 +107,8 @@ class Gedcom:
                 self.__get_name()
             elif self.tag == 'SEX':
                 self.indi[self.num].gender = self.data
-            elif self.tag == 'BIRT':
-                self.__get_birt()
-            elif self.tag == 'CHR':
-                self.__get_chr()
-            elif self.tag == 'DEAT':
-                self.__get_deat()
-            elif self.tag == 'BURI':
-                self.__get_buri()
-            elif self.tag == 'DSCR' or self.tag == 'OCCU' or self.tag == '_MILT':
-                self.__get_fact()
+            elif self.tag in FACT_TYPES or self.tag == 'EVEN':
+                self.indi[self.num].facts.add(self.__get_fact())
             elif self.tag == 'BAPL':
                 self.indi[self.num].baptism = self.__get_ordinance()
             elif self.tag == 'CONL':
@@ -121,9 +118,11 @@ class Gedcom:
             elif self.tag == 'SLGC':
                 self.indi[self.num].sealing_child = self.__get_ordinance()
             elif self.tag == 'FAMS':
-                self.indi[self.num].fams_num.add(int(self.data[2:len(self.data) - 1]))
+                self.indi[self.num].fams_num.add(
+                    int(self.data[2:len(self.data) - 1]))
             elif self.tag == 'FAMC':
-                self.indi[self.num].famc_num.add(int(self.data[2:len(self.data) - 1]))
+                self.indi[self.num].famc_num.add(
+                    int(self.data[2:len(self.data) - 1]))
             elif self.tag == '_FSFTID':
                 self.indi[self.num].fid = self.data
             elif self.tag == 'NOTE':
@@ -140,13 +139,16 @@ class Gedcom:
     def __get_fam(self):
         while self.__get_line() and self.level > 0:
             if self.tag == 'HUSB':
-                self.fam[self.num].husb_num = int(self.data[2:len(self.data) - 1])
+                self.fam[self.num].husb_num = int(
+                    self.data[2:len(self.data) - 1])
             elif self.tag == 'WIFE':
-                self.fam[self.num].wife_num = int(self.data[2:len(self.data) - 1])
+                self.fam[self.num].wife_num = int(
+                    self.data[2:len(self.data) - 1])
             elif self.tag == 'CHIL':
-                self.fam[self.num].chil_num.add(int(self.data[2:len(self.data) - 1]))
-            elif self.tag in ('MARR', 'DIV', 'ANUL', '_COML'):
-                self.fam[self.num].marriage_facts.add(self.__get_marr())
+                self.fam[self.num].chil_num.add(
+                    int(self.data[2:len(self.data) - 1]))
+            elif self.tag in FACT_TYPES:
+                self.fam[self.num].facts.add(self.__get_fact())
             elif self.tag == 'SLGS':
                 self.fam[self.num].sealing_spouse = self.__get_ordinance()
             elif self.tag == '_FSFTID':
@@ -211,7 +213,6 @@ class Gedcom:
         self.flag = True
 
     def __get_deat(self):
-        self.indi[self.num].living = False
         while self.__get_line() and self.level > 1:
             if self.tag == 'DATE':
                 self.indi[self.num].deatdate = self.data
@@ -227,16 +228,16 @@ class Gedcom:
                 self.indi[self.num].buriplac = self.data
         self.flag = True
 
-    def __get_marr(self):
+    def __get_fact(self):
         fact = Fact()
-        if self.tag == 'MARR':
-            fact.type = 'http://gedcomx.org/Marriage'
-        elif self.tag == 'DIV':
-            fact.type = 'http://gedcomx.org/Divorce'
-        elif self.tag == 'ANUL':
-            fact.type = 'http://gedcomx.org/Annulment'
-        elif self.tag == '_COML':
-            fact.type = 'http://gedcomx.org/CommonLawMarriage'
+        if self.tag == 'EVEN':
+            self.__get_line()
+            fact.type = 'data:,' + self.data
+            self.__get_line()
+            fact.value = self.data[12:]
+        else:
+            fact.type = FACT_TYPES[self.tag]
+            fact.value = self.data
         while self.__get_line() and self.level > 1:
             if self.tag == 'DATE':
                 fact.date = self.data
@@ -249,27 +250,6 @@ class Gedcom:
                 fact.note = self.note[num]
         self.flag = True
         return fact
-
-    def __get_fact(self):
-        fact = Fact()
-        fact.value = self.data
-        if self.tag == 'DSCR':
-            self.indi[self.num].physical_descriptions.add(fact)
-        elif self.tag == 'OCCU':
-            self.indi[self.num].occupations.add(fact)
-        elif self.tag == '_MILT':
-            self.indi[self.num].military.add(fact)
-        while self.__get_line() and self.level > 1:
-            if self.tag == 'DATE':
-                fact.date = self.data
-            elif self.tag == 'PLAC':
-                fact.place = self.data
-            elif self.tag == 'NOTE':
-                num = int(self.data[2:len(self.data) - 1])
-                if num not in self.note:
-                    self.note[num] = Note(tree=self.tree, num=num)
-                fact.note = self.note[num]
-        self.flag = True
 
     def __get_text(self):
         text = self.data
@@ -318,7 +298,6 @@ class Gedcom:
 
     def __get_memorie(self):
         memorie = Memorie()
-        pdb = False
         while self.__get_line() and self.level > 1:
             if self.tag == 'TITL':
                 memorie.description = self.__get_text()
@@ -358,19 +337,25 @@ class Gedcom:
                 self.fam[num].chil_fid.add(self.indi[chil].fid)
         for num in self.indi:
             for famc in self.indi[num].famc_num:
-                self.indi[num].famc_fid.add((self.fam[famc].husb_fid, self.fam[famc].wife_fid))
+                self.indi[num].famc_fid.add(
+                    (self.fam[famc].husb_fid, self.fam[famc].wife_fid))
             for fams in self.indi[num].fams_num:
-                self.indi[num].fams_fid.add((self.fam[fams].husb_fid, self.fam[fams].wife_fid))
+                self.indi[num].fams_fid.add(
+                    (self.fam[fams].husb_fid, self.fam[fams].wife_fid))
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Merge GEDCOM data from FamilySearch Tree (4 Jul 2016)', add_help=False, usage='mergemyancestors.py -i input1.ged input2.ged ... [options]')
+    parser = argparse.ArgumentParser(description='Merge GEDCOM data from FamilySearch Tree (4 Jul 2016)',
+                                     add_help=False, usage='mergemyancestors.py -i input1.ged input2.ged ... [options]')
     try:
-        parser.add_argument('-i', metavar='<FILE>', nargs='+', type=argparse.FileType('r', encoding='UTF-8'), default=sys.stdin, help='input GEDCOM files [stdin]')
-        parser.add_argument('-o', metavar='<FILE>', nargs='?', type=argparse.FileType('w', encoding='UTF-8'), default=sys.stdout, help='output GEDCOM files [stdout]')
+        parser.add_argument('-i', metavar='<FILE>', nargs='+', type=argparse.FileType(
+            'r', encoding='UTF-8'), default=sys.stdin, help='input GEDCOM files [stdin]')
+        parser.add_argument('-o', metavar='<FILE>', nargs='?', type=argparse.FileType(
+            'w', encoding='UTF-8'), default=sys.stdout, help='output GEDCOM files [stdout]')
     except TypeError:
         sys.stderr.write('Python >= 3.4 is required to run this script\n')
-        sys.stderr.write('(see https://docs.python.org/3/whatsnew/3.4.html#argparse)\n')
+        sys.stderr.write(
+            '(see https://docs.python.org/3/whatsnew/3.4.html#argparse)\n')
         exit(2)
 
     # extract arguments from the command line
@@ -400,7 +385,6 @@ if __name__ == '__main__':
                 tree.indi[fid] = Indi(tree=tree, num=indi_counter)
                 tree.indi[fid].tree = tree
                 tree.indi[fid].fid = ged.indi[num].fid
-            tree.indi[fid].living = ged.indi[num].living
             tree.indi[fid].fams_fid |= ged.indi[num].fams_fid
             tree.indi[fid].famc_fid |= ged.indi[num].famc_fid
             tree.indi[fid].name = ged.indi[num].name
@@ -409,17 +393,7 @@ if __name__ == '__main__':
             tree.indi[fid].aka = ged.indi[num].aka
             tree.indi[fid].married = ged.indi[num].married
             tree.indi[fid].gender = ged.indi[num].gender
-            tree.indi[fid].birtdate = ged.indi[num].birtdate
-            tree.indi[fid].birtplac = ged.indi[num].birtplac
-            tree.indi[fid].chrdate = ged.indi[num].chrdate
-            tree.indi[fid].chrplac = ged.indi[num].chrplac
-            tree.indi[fid].deatdate = ged.indi[num].deatdate
-            tree.indi[fid].deatplac = ged.indi[num].deatplac
-            tree.indi[fid].buridate = ged.indi[num].buridate
-            tree.indi[fid].buriplac = ged.indi[num].buriplac
-            tree.indi[fid].physical_descriptions = ged.indi[num].physical_descriptions
-            tree.indi[fid].occupations = ged.indi[num].occupations
-            tree.indi[fid].military = ged.indi[num].military
+            tree.indi[fid].facts = ged.indi[num].facts
             tree.indi[fid].notes = ged.indi[num].notes
             tree.indi[fid].sources = ged.indi[num].sources
             tree.indi[fid].memories = ged.indi[num].memories
@@ -438,7 +412,7 @@ if __name__ == '__main__':
                 tree.fam[(husb, wife)].tree = tree
             tree.fam[(husb, wife)].chil_fid |= ged.fam[num].chil_fid
             tree.fam[(husb, wife)].fid = ged.fam[num].fid
-            tree.fam[(husb, wife)].marriage_facts = ged.fam[num].marriage_facts
+            tree.fam[(husb, wife)].facts = ged.fam[num].facts
             tree.fam[(husb, wife)].notes = ged.fam[num].notes
             tree.fam[(husb, wife)].sources = ged.fam[num].sources
             tree.fam[(husb, wife)].sealing_spouse = ged.fam[num].sealing_spouse
