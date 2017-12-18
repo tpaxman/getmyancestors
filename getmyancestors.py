@@ -27,6 +27,7 @@ import argparse
 import getpass
 import time
 import asyncio
+from fsearch_translation import translations
 
 try:
     import requests
@@ -59,7 +60,7 @@ class Session:
         self.verbose = verbose
         self.logfile = logfile
         self.timeout = timeout
-        self.fid = None
+        self.fid = self.lang = None
         self.login()
 
     # retrieve FamilySearch session ID (https://familysearch.org/developers/docs/guides/oauth2)
@@ -257,12 +258,24 @@ class Session:
             return r.json()
 
     # retrieve FamilySearch current user ID
+    def set_current(self):
+        url = 'https://familysearch.org/platform/users/current.json'
+        data = self.get_url(url)
+        if data:
+            self.fid = data['users'][0]['personId']
+            self.lang = data['users'][0]['preferredLanguage']
+
     def get_userid(self):
         if not self.fid:
-            url = 'https://familysearch.org/platform/users/current.json'
-            data = self.get_url(url)
-            self.fid = data['users'][0]['personId'] if data else None
+            self.set_current()
         return self.fid
+
+    def _(self, string):
+        if not self.lang:
+            self.set_current()
+        if string in translations and self.lang in translations[string]:
+            return translations[string][self.lang]
+        return string
 
 
 # some GEDCOM objects
@@ -513,7 +526,7 @@ class Indi:
                 for y in x['facts']:
                     if y['type'] == u'http://familysearch.org/v1/LifeSketch':
                         self.notes.add(
-                            Note('=== Life Sketch ===\n' + y['value'], self.tree))
+                            Note('=== ' + self.tree.fs._('Life Sketch') + ' ===\n' + y['value'], self.tree))
                     else:
                         self.facts.add(Fact(y, self.tree))
                 if 'sources' in x:
@@ -623,7 +636,7 @@ class Indi:
             for contributors in entries['contributors']:
                 temp.add(contributors['name'])
         if temp:
-            text = '=== Contributors ===\n' + '\n'.join(sorted(temp))
+            text = '=== ' + self.tree.fs._('Contributors') + ' ===\n' + '\n'.join(sorted(temp))
             for n in self.tree.notes:
                 if n.text == text:
                     self.notes.add(n)
@@ -742,7 +755,7 @@ class Fam:
                 for contributors in entries['contributors']:
                     temp.add(contributors['name'])
             if temp:
-                text = '=== Contributors ===\n' + '\n'.join(sorted(temp))
+                text = '=== ' + self.tree.fs._('Contributors') + ' ===\n' + '\n'.join(sorted(temp))
                 for n in self.tree.notes:
                     if n.text == text:
                         self.notes.add(n)
@@ -1011,5 +1024,3 @@ if __name__ == '__main__':
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
     tree.print(args.o)
-
-    import pdb; pdb.set_trace()
