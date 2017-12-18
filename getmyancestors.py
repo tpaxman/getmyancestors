@@ -33,8 +33,7 @@ try:
     import requests
 except ImportError:
     sys.stderr.write('You need to install the requests module first\n')
-    sys.stderr.write(
-        '(run this in your terminal: "python3 -m pip install requests" or "python3 -m pip install --user requests")\n')
+    sys.stderr.write('(run this in your terminal: "python3 -m pip install requests" or "python3 -m pip install --user requests")\n')
     exit(2)
 
 FACT_TAGS = {
@@ -69,14 +68,11 @@ class Session:
             try:
                 url = 'https://www.familysearch.org/auth/familysearch/login'
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
-                r = requests.get(
-                    url, params={'ldsauth': False}, allow_redirects=False)
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
+                r = requests.get(url, params={'ldsauth': False}, allow_redirects=False)
                 url = r.headers['Location']
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
                 r = requests.get(url, allow_redirects=False)
                 idx = r.text.index('name="params" value="')
                 span = r.text[idx + 21:].index('"')
@@ -84,62 +80,51 @@ class Session:
 
                 url = 'https://ident.familysearch.org/cis-web/oauth2/v3/authorization'
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
-                r = requests.post(url, data={
-                                  'params': params, 'userName': self.username, 'password': self.password}, allow_redirects=False)
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
+                r = requests.post(url, data={'params': params, 'userName': self.username, 'password': self.password}, allow_redirects=False)
 
                 if 'The username or password was incorrect' in r.text:
                     if self.verbose:
-                        self.logfile.write(
-                            '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: The username or password was incorrect\n')
+                        self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: The username or password was incorrect\n')
                     exit()
 
                 if 'Invalid Oauth2 Request' in r.text:
                     if self.verbose:
-                        self.logfile.write(
-                            '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Invalid Oauth2 Request\n')
+                        self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Invalid Oauth2 Request\n')
                     time.sleep(self.timeout)
                     continue
 
                 url = r.headers['Location']
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
                 r = requests.get(url, allow_redirects=False)
                 self.fssessionid = r.cookies['fssessionid']
             except requests.exceptions.ReadTimeout:
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Read timed out\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Read timed out\n')
                 continue
             except requests.exceptions.ConnectionError:
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Connection aborted\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Connection aborted\n')
                 time.sleep(self.timeout)
                 continue
             except requests.exceptions.HTTPError:
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: HTTPError\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: HTTPError\n')
                 time.sleep(self.timeout)
                 continue
             except KeyError:
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: KeyError\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: KeyError\n')
                 time.sleep(self.timeout)
                 continue
             except ValueError:
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: ValueError\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: ValueError\n')
                 time.sleep(self.timeout)
                 continue
             if self.verbose:
-                self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") +
-                                   ']: FamilySearch session id: ' + self.fssessionid + '\n')
+                self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: FamilySearch session id: ' + self.fssessionid + '\n')
             return
 
     # retrieve FamilySearch developer key (wget -O- --max-redirect 0 https://familysearch.org/auth/familysearch/login?ldsauth=false)
@@ -147,23 +132,19 @@ class Session:
         url = 'https://familysearch.org/auth/familysearch/login'
         while True:
             if self.verbose:
-                self.logfile.write(
-                    '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
+                self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
             try:
-                r = requests.get(
-                    url, params={'ldsauth': False}, allow_redirects=False, timeout=self.timeout)
+                r = requests.get(url, params={'ldsauth': False}, allow_redirects=False, timeout=self.timeout)
                 location = r.headers['Location']
                 idx = location.index('client_id=')
                 key = location[idx + 10:idx + 49]
             except ValueError:
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: FamilySearch developer key not found\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: FamilySearch developer key not found\n')
                 time.sleep(self.timeout)
                 continue
             if self.verbose:
-                self.logfile.write(
-                    '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: FamilySearch developer key: ' + key + '\n')
+                self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: FamilySearch developer key: ' + key + '\n')
             return key
 
     # retrieve FamilySearch session ID (https://familysearch.org/developers/docs/guides/oauth1/login)
@@ -173,40 +154,33 @@ class Session:
                 'password': self.password}
         while True:
             if self.verbose:
-                self.logfile.write(
-                    '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
+                self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
             try:
                 r = requests.post(url, data, timeout=self.timeout)
             except requests.exceptions.ReadTimeout:
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Read timed out\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Read timed out\n')
                 continue
             except requests.exceptions.ConnectionError:
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Connection aborted\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Connection aborted\n')
                 time.sleep(self.timeout)
                 continue
             if self.verbose:
-                self.logfile.write(
-                    '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Status code: ' + str(r.status_code) + '\n')
+                self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Status code: ' + str(r.status_code) + '\n')
             if r.status_code == 401:
-                self.logfile.write(
-                    '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Login failure\n')
+                self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Login failure\n')
                 raise Exception('Login failure')
             try:
                 r.raise_for_status()
             except requests.exceptions.HTTPError:
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: HTTPError\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: HTTPError\n')
                 time.sleep(self.timeout)
                 continue
             self.fssessionid = r.cookies['fssessionid']
             if self.verbose:
-                self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") +
-                                   ']: FamilySearch session id: ' + self.fssessionid + '\n')
+                self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: FamilySearch session id: ' + self.fssessionid + '\n')
             return
 
     # retrieve JSON structure from FamilySearch URL
@@ -214,25 +188,20 @@ class Session:
         while True:
             try:
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
                 # r = requests.get(url, cookies = { 's_vi': self.s_vi, 'fssessionid' : self.fssessionid }, timeout = self.timeout)
-                r = requests.get(
-                    url, cookies={'fssessionid': self.fssessionid}, timeout=self.timeout)
+                r = requests.get(url, cookies={'fssessionid': self.fssessionid}, timeout=self.timeout)
             except requests.exceptions.ReadTimeout:
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Read timed out\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Read timed out\n')
                 continue
             except requests.exceptions.ConnectionError:
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Connection aborted\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Connection aborted\n')
                 time.sleep(self.timeout)
                 continue
             if self.verbose:
-                self.logfile.write(
-                    '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Status code: ' + str(r.status_code) + '\n')
+                self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Status code: ' + str(r.status_code) + '\n')
             if r.status_code == 204 or r.status_code == 410:
                 return None
             if r.status_code == 401:
@@ -242,16 +211,13 @@ class Session:
                 r.raise_for_status()
             except requests.exceptions.HTTPError:
                 if self.verbose:
-                    self.logfile.write(
-                        '[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: HTTPError\n')
+                    self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: HTTPError\n')
                 if r.status_code == 403:
                     if 'message' in r.json()['errors'][0] and r.json()['errors'][0]['message'] == u'Unable to get ordinances.':
-                        self.logfile.write(
-                            'Unable to get ordinances. Try with an LDS account or without option -c.\n')
+                        self.logfile.write('Unable to get ordinances. Try with an LDS account or without option -c.\n')
                         exit()
                     else:
-                        self.logfile.write(
-                            'Warning code 403 link: ' + url + ' ' + r.json()['errors'][0]['message'] or '')
+                        self.logfile.write('Warning code 403 link: ' + url + ' ' + r.json()['errors'][0]['message'] or '')
                         return None
                 time.sleep(self.timeout)
                 continue
@@ -295,8 +261,7 @@ class Note:
         self.text = text.strip()
 
     def print(self, file=sys.stdout):
-        file.write('0 @N' + str(self.num) + '@ NOTE ' +
-                   self.text.replace('\n', '\n1 CONT ') + '\n')
+        file.write('0 @N' + str(self.num) + '@ NOTE ' + self.text.replace('\n', '\n1 CONT ') + '\n')
 
     def link(self, file=sys.stdout, level=1):
         file.write(str(level) + ' NOTE @N' + str(self.num) + '@\n')
@@ -321,8 +286,7 @@ class Source:
         if data:
             self.fid = data['id']
             if 'about' in data:
-                self.url = data['about'].replace(
-                    'familysearch.org/platform/memories/memories', 'www.familysearch.org/photos/artifacts')
+                self.url = data['about'].replace('familysearch.org/platform/memories/memories', 'www.familysearch.org/photos/artifacts')
             if 'citations' in data:
                 self.citation = data['citations'][0]['value']
             if data['titles']:
@@ -337,8 +301,7 @@ class Source:
         if self.title:
             file.write('1 TITL ' + self.title.replace('\n', '\n2 CONT ') + '\n')
         if self.citation:
-            file.write(
-                '1 AUTH ' + self.citation.replace('\n', '\n2 CONT ') + '\n')
+            file.write('1 AUTH ' + self.citation.replace('\n', '\n2 CONT ') + '\n')
         if self.url:
             file.write('1 PUBL ' + self.url.replace('\n', '\n2 CONT ') + '\n')
         for n in self.notes:
@@ -371,8 +334,7 @@ class Fact:
         if self.type in FACT_TAGS:
             file.write('1 ' + FACT_TAGS[self.type])
         elif self.type[:6] == u'data:,':
-            file.write('1 EVEN\n2 TYPE ' +
-                       self.type[6:] + '\n2 NOTE Description:')
+            file.write('1 EVEN\n2 TYPE ' + self.type[6:] + '\n2 NOTE Description:')
         else:
             return
         if self.value:
@@ -395,14 +357,12 @@ class Memorie:
             if 'titles' in data:
                 self.description = data['titles'][0]['value']
             if 'descriptions' in data:
-                self.description = (
-                    '' if not self.description else self.description + '\n') + data['descriptions'][0]['value']
+                self.description = ('' if not self.description else self.description + '\n') + data['descriptions'][0]['value']
 
     def print(self, file=sys.stdout):
         file.write('1 OBJE\n2 FORM URL\n')
         if self.description:
-            file.write(
-                '2 TITL ' + self.description.replace('\n', '\n2 CONT ') + '\n')
+            file.write('2 TITL ' + self.description.replace('\n', '\n2 CONT ') + '\n')
         if self.url:
             file.write('2 FILE ' + self.url + '\n')
 
@@ -525,8 +485,7 @@ class Indi:
                         self.gender = 'U'
                 for y in x['facts']:
                     if y['type'] == u'http://familysearch.org/v1/LifeSketch':
-                        self.notes.add(
-                            Note('=== ' + self.tree.fs._('Life Sketch') + ' ===\n' + y['value'], self.tree))
+                        self.notes.add(Note('=== ' + self.tree.fs._('Life Sketch') + ' ===\n' + y['value'], self.tree))
                     else:
                         self.facts.add(Fact(y, self.tree))
                 if 'sources' in x:
@@ -534,8 +493,7 @@ class Indi:
                         source = self.tree.add_source(y['descriptionId'])
                         if source:
                             if 'changeMessage' in y['attribution']:
-                                self.sources.add(
-                                    (source, y['attribution']['changeMessage']))
+                                self.sources.add((source, y['attribution']['changeMessage']))
                             else:
                                 self.sources.add((source,))
                 if 'evidence' in x:
@@ -595,8 +553,7 @@ class Indi:
 
     # retrieve individual notes
     def get_notes(self):
-        notes = self.tree.fs.get_url(
-            'https://familysearch.org/platform/tree/persons/%s/notes.json' % self.fid)
+        notes = self.tree.fs.get_url('https://familysearch.org/platform/tree/persons/%s/notes.json' % self.fid)
         if notes:
             for n in notes['persons'][0]['notes']:
                 text_note = '===' + n['subject'] + \
@@ -630,8 +587,7 @@ class Indi:
     # retrieve contributors
     def get_contributors(self):
         temp = set()
-        data = self.tree.fs.get_url(
-            'https://familysearch.org/platform/tree/persons/%s/changes.json' % self.fid)
+        data = self.tree.fs.get_url('https://familysearch.org/platform/tree/persons/%s/changes.json' % self.fid)
         for entries in data['entries']:
             for contributors in entries['contributors']:
                 temp.add(contributors['name'])
@@ -728,16 +684,14 @@ class Fam:
                     source = self.tree.add_source(y['descriptionId'])
                     if source:
                         if 'changeMessage' in y['attribution']:
-                            self.sources.add(
-                                (source, y['attribution']['changeMessage']))
+                            self.sources.add((source, y['attribution']['changeMessage']))
                         else:
                             self.sources.add((source,))
 
     # retrieve marriage notes
     def get_notes(self):
         if self.fid:
-            notes = self.tree.fs.get_url(
-                'https://familysearch.org/platform/tree/couple-relationships/%s/notes.json' % self.fid)
+            notes = self.tree.fs.get_url('https://familysearch.org/platform/tree/couple-relationships/%s/notes.json' % self.fid)
             if notes:
                 for n in notes['relationships'][0]['notes']:
                     text_note = '===' + n['subject'] + \
@@ -749,8 +703,7 @@ class Fam:
     def get_contributors(self):
         if self.fid:
             temp = set()
-            data = self.tree.fs.get_url(
-                'https://familysearch.org/platform/tree/couple-relationships/%s/changes.json' % self.fid)
+            data = self.tree.fs.get_url('https://familysearch.org/platform/tree/couple-relationships/%s/changes.json' % self.fid)
             for entries in data['entries']:
                 for contributors in entries['contributors']:
                     temp.add(contributors['name'])
@@ -865,8 +818,7 @@ class Tree:
         if fid:
             if fid in self.sources:
                 return self.sources[fid]
-            data = self.fs.get_url(
-                'https://familysearch.org/platform/sources/descriptions/%s.json' % fid)
+            data = self.fs.get_url('https://familysearch.org/platform/sources/descriptions/%s.json' % fid)
             if data:
                 return Source(data['sourceDescriptions'][0], self)
         return False
@@ -875,13 +827,10 @@ class Tree:
         for husb, wife in self.fam:
             self.fam[(husb, wife)].husb_num = self.indi[husb].num if husb else None
             self.fam[(husb, wife)].wife_num = self.indi[wife].num if wife else None
-            self.fam[(husb, wife)].chil_num = set(
-                [self.indi[chil].num for chil in self.fam[(husb, wife)].chil_fid])
+            self.fam[(husb, wife)].chil_num = set([self.indi[chil].num for chil in self.fam[(husb, wife)].chil_fid])
         for fid in self.indi:
-            self.indi[fid].famc_num = set(
-                [self.fam[(husb, wife)].num for husb, wife in self.indi[fid].famc_fid])
-            self.indi[fid].fams_num = set(
-                [self.fam[(husb, wife)].num for husb, wife in self.indi[fid].fams_fid])
+            self.indi[fid].famc_num = set([self.fam[(husb, wife)].num for husb, wife in self.indi[fid].famc_fid])
+            self.indi[fid].fams_num = set([self.fam[(husb, wife)].num for husb, wife in self.indi[fid].fams_fid])
 
     # print GEDCOM file
     def print(self, file=sys.stdout):
@@ -930,14 +879,11 @@ if __name__ == '__main__':
     parser.add_argument('-t', metavar='<INT>', type=int,
                         default=60, help='Timeout in seconds [60]')
     try:
-        parser.add_argument('-o', metavar='<FILE>', type=argparse.FileType(
-            'w', encoding='UTF-8'), default=sys.stdout, help='output GEDCOM file [stdout]')
-        parser.add_argument('-l', metavar='<FILE>', type=argparse.FileType(
-            'w', encoding='UTF-8'), default=sys.stderr, help='output log file [stderr]')
+        parser.add_argument('-o', metavar='<FILE>', type=argparse.FileType('w', encoding='UTF-8'), default=sys.stdout, help='output GEDCOM file [stdout]')
+        parser.add_argument('-l', metavar='<FILE>', type=argparse.FileType('w', encoding='UTF-8'), default=sys.stderr, help='output log file [stderr]')
     except TypeError:
         sys.stderr.write('Python >= 3.4 is required to run this script\n')
-        sys.stderr.write(
-            '(see https://docs.python.org/3/whatsnew/3.4.html#argparse)\n')
+        sys.stderr.write('(see https://docs.python.org/3/whatsnew/3.4.html#argparse)\n')
         exit(2)
 
     # extract arguments from the command line
@@ -949,8 +895,7 @@ if __name__ == '__main__':
         exit(2)
 
     username = args.u if args.u else input("Enter FamilySearch username: ")
-    password = args.p if args.p else getpass.getpass(
-        "Enter FamilySearch password: ")
+    password = args.p if args.p else getpass.getpass("Enter FamilySearch password: ")
 
     # initialize a FamilySearch session and a family tree object
     fs = Session(username, password, args.v, args.l, args.t)
@@ -958,8 +903,7 @@ if __name__ == '__main__':
 
     # check LDS account
     if args.c:
-        fs.get_url(
-            'https://familysearch.org/platform/tree/persons/%s/ordinances.json' % fs.get_userid())
+        fs.get_url('https://familysearch.org/platform/tree/persons/%s/ordinances.json' % fs.get_userid())
 
     loop = asyncio.get_event_loop()
 
@@ -982,13 +926,11 @@ if __name__ == '__main__':
             todo = next_todo - done
 
     # download ancestors
-    loop.run_until_complete(download_tree(
-        tree.add_parents, todo, args.a, loop))
+    loop.run_until_complete(download_tree(tree.add_parents, todo, args.a, loop))
 
     # download descendants
     todo = set(tree.indi.keys())
-    loop.run_until_complete(download_tree(
-        tree.add_children, todo, args.d, loop))
+    loop.run_until_complete(download_tree(tree.add_children, todo, args.d, loop))
 
     # download spouses
     async def download_spouses(loop):
@@ -1007,8 +949,7 @@ if __name__ == '__main__':
         futures = set()
         for fid, indi in tree.indi.items():
             if args.c:
-                futures.add(loop.run_in_executor(
-                    None, tree.add_ordinances, fid))
+                futures.add(loop.run_in_executor(None, tree.add_ordinances, fid))
             futures.add(loop.run_in_executor(None, indi.get_notes))
             if args.r:
                 futures.add(loop.run_in_executor(None, indi.get_contributors))

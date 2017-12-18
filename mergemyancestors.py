@@ -118,11 +118,9 @@ class Gedcom:
             elif self.tag == 'SLGC':
                 self.indi[self.num].sealing_child = self.__get_ordinance()
             elif self.tag == 'FAMS':
-                self.indi[self.num].fams_num.add(
-                    int(self.data[2:len(self.data) - 1]))
+                self.indi[self.num].fams_num.add(int(self.data[2:len(self.data) - 1]))
             elif self.tag == 'FAMC':
-                self.indi[self.num].famc_num.add(
-                    int(self.data[2:len(self.data) - 1]))
+                self.indi[self.num].famc_num.add(int(self.data[2:len(self.data) - 1]))
             elif self.tag == '_FSFTID':
                 self.indi[self.num].fid = self.data
             elif self.tag == 'NOTE':
@@ -139,14 +137,11 @@ class Gedcom:
     def __get_fam(self):
         while self.__get_line() and self.level > 0:
             if self.tag == 'HUSB':
-                self.fam[self.num].husb_num = int(
-                    self.data[2:len(self.data) - 1])
+                self.fam[self.num].husb_num = int(self.data[2:len(self.data) - 1])
             elif self.tag == 'WIFE':
-                self.fam[self.num].wife_num = int(
-                    self.data[2:len(self.data) - 1])
+                self.fam[self.num].wife_num = int(self.data[2:len(self.data) - 1])
             elif self.tag == 'CHIL':
-                self.fam[self.num].chil_num.add(
-                    int(self.data[2:len(self.data) - 1]))
+                self.fam[self.num].chil_num.add(int(self.data[2:len(self.data) - 1]))
             elif self.tag in FACT_TYPES:
                 self.fam[self.num].facts.add(self.__get_fact())
             elif self.tag == 'SLGS':
@@ -337,25 +332,19 @@ class Gedcom:
                 self.fam[num].chil_fid.add(self.indi[chil].fid)
         for num in self.indi:
             for famc in self.indi[num].famc_num:
-                self.indi[num].famc_fid.add(
-                    (self.fam[famc].husb_fid, self.fam[famc].wife_fid))
+                self.indi[num].famc_fid.add((self.fam[famc].husb_fid, self.fam[famc].wife_fid))
             for fams in self.indi[num].fams_num:
-                self.indi[num].fams_fid.add(
-                    (self.fam[fams].husb_fid, self.fam[fams].wife_fid))
+                self.indi[num].fams_fid.add((self.fam[fams].husb_fid, self.fam[fams].wife_fid))
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Merge GEDCOM data from FamilySearch Tree (4 Jul 2016)',
-                                     add_help=False, usage='mergemyancestors.py -i input1.ged input2.ged ... [options]')
+    parser = argparse.ArgumentParser(description='Merge GEDCOM data from FamilySearch Tree (4 Jul 2016)', add_help=False, usage='mergemyancestors.py -i input1.ged input2.ged ... [options]')
     try:
-        parser.add_argument('-i', metavar='<FILE>', nargs='+', type=argparse.FileType(
-            'r', encoding='UTF-8'), default=sys.stdin, help='input GEDCOM files [stdin]')
-        parser.add_argument('-o', metavar='<FILE>', nargs='?', type=argparse.FileType(
-            'w', encoding='UTF-8'), default=sys.stdout, help='output GEDCOM files [stdout]')
+        parser.add_argument('-i', metavar='<FILE>', nargs='+', type=argparse.FileType('r', encoding='UTF-8'), default=sys.stdin, help='input GEDCOM files [stdin]')
+        parser.add_argument('-o', metavar='<FILE>', nargs='?', type=argparse.FileType('w', encoding='UTF-8'), default=sys.stdout, help='output GEDCOM files [stdout]')
     except TypeError:
         sys.stderr.write('Python >= 3.4 is required to run this script\n')
-        sys.stderr.write(
-            '(see https://docs.python.org/3/whatsnew/3.4.html#argparse)\n')
+        sys.stderr.write('(see https://docs.python.org/3/whatsnew/3.4.html#argparse)\n')
         exit(2)
 
     # extract arguments from the command line
