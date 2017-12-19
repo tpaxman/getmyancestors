@@ -47,7 +47,25 @@ FACT_TAGS = {
     'http://gedcomx.org/Marriage': 'MARR',
     'http://gedcomx.org/Divorce': 'DIV',
     'http://gedcomx.org/Annulment': 'ANUL',
-    'http://gedcomx.org/CommonLawMarriage': '_COML'
+    'http://gedcomx.org/CommonLawMarriage': '_COML',
+    'http://gedcomx.org/BarMitzvah': 'BARM',
+    'http://gedcomx.org/BatMitzvah': 'BASM',
+    'http://gedcomx.org/Naturalization': 'NATU',
+    'http://gedcomx.org/Residence': 'RESI',
+    'http://gedcomx.org/Religion': 'RELI',
+    'http://familysearch.org/v1/TitleOfNobility': 'TITL',
+    'http://gedcomx.org/Cremation': 'CREM',
+    'http://gedcomx.org/Caste': 'CAST',
+    'http://gedcomx.org/Nationality': 'NATI',
+}
+
+FACT_EVEN = {
+    'http://gedcomx.org/Stillbirth': 'Stillborn',
+    'http://familysearch.org/v1/Affiliation': 'Affiliation',
+    'http://gedcomx.org/Clan': 'Clan Name',
+    'http://gedcomx.org/NationalId': 'National Identification',
+    'http://gedcomx.org/Ethnicity': 'Race',
+    'http://familysearch.org/v1/TribeName': 'Tribe Name'
 }
 
 
@@ -321,24 +339,32 @@ class Fact:
                 self.value = data['value']
             if 'type' in data:
                 self.type = data['type']
+                if self.type in FACT_EVEN:
+                    self.type = tree.fs._(FACT_EVEN[self.type])
+                elif self.type[:6] == u'data:,':
+                    self.type = self.type[6:]
+                elif self.type not in FACT_TAGS:
+                    self.type = None
             if 'date' in data:
                 self.date = data['date']['original']
             if 'place' in data:
                 self.place = data['place']['original']
             if 'changeMessage' in data['attribution']:
                 self.note = Note(data['attribution']['changeMessage'], tree)
-            if self.type == 'http://gedcomx.org/Death' and not any([self.date, self.place]):
+            if self.type == 'http://gedcomx.org/Death' and not (self.date or self.place):
                 self.value = 'Y'
 
     def print(self, file=sys.stdout, key=None):
         if self.type in FACT_TAGS:
             file.write('1 ' + FACT_TAGS[self.type])
-        elif self.type[:6] == u'data:,':
-            file.write('1 EVEN\n2 TYPE ' + self.type[6:] + '\n2 NOTE Description:')
+            if self.value:
+                file.write(' ' + self.value)
+        elif self.type:
+            file.write('1 EVEN\n2 TYPE ' + self.type)
+            if self.value:
+                file.write('\n2 NOTE Description: ' + self.value)
         else:
             return
-        if self.value:
-            file.write(' ' + self.value)
         file.write('\n')
         if self.date:
             file.write('2 DATE ' + self.date + '\n')

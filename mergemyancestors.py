@@ -225,20 +225,25 @@ class Gedcom:
 
     def __get_fact(self):
         fact = Fact()
-        if self.tag == 'EVEN':
-            self.__get_line()
-            fact.type = 'data:,' + self.data
-            self.__get_line()
-            fact.value = self.data[12:]
-        else:
+        # if self.tag == 'EVEN':
+        #     self.__get_line()
+        #     fact.type = self.data
+        #     self.__get_line()
+        #     fact.value = self.data[12:]
+        if self.tag != 'EVEN':
             fact.type = FACT_TYPES[self.tag]
             fact.value = self.data
         while self.__get_line() and self.level > 1:
+            if self.tag == 'TYPE':
+                fact.type = self.data
             if self.tag == 'DATE':
                 fact.date = self.data
             elif self.tag == 'PLAC':
                 fact.place = self.data
             elif self.tag == 'NOTE':
+                if self.data[:12] == 'Description:':
+                    fact.value = self.data[13:]
+                    continue
                 num = int(self.data[2:len(self.data) - 1])
                 if num not in self.note:
                     self.note[num] = Note(tree=self.tree, num=num)
