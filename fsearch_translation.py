@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 translations = {
     'Life Sketch': {
         'de': 'Kurzinfo zum Lebenslauf',

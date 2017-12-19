@@ -21,6 +21,7 @@
    and by Benoît Fontaine <benoitfontaine.ba@gmail.com>
 """
 
+# global import
 from __future__ import print_function
 import sys
 import argparse
@@ -28,6 +29,8 @@ import getpass
 import time
 import asyncio
 import re
+
+# local import
 from fsearch_translation import translations
 
 try:
@@ -173,8 +176,7 @@ class Session:
     # retrieve FamilySearch session ID (https://familysearch.org/developers/docs/guides/oauth1/login)
     def old_login(self, oldmethod=False):
         url = 'https://api.familysearch.org/identity/v2/login'
-        data = {'key': self.key, 'username': self.username,
-                'password': self.password}
+        data = {'key': self.key, 'username': self.username, 'password': self.password}
         while True:
             if self.verbose:
                 self.logfile.write('[' + time.strftime("%Y-%m-%d %H:%M:%S") + ']: Downloading: ' + url + '\n')
@@ -887,28 +889,17 @@ class Tree:
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Retrieve GEDCOM data from FamilySearch Tree (4 Jul 2016)',
-                                     add_help=False, usage='getmyancestors.py -u username -p password [options]')
-    parser.add_argument('-u', metavar='<STR>', type=str,
-                        help='FamilySearch username')
-    parser.add_argument('-p', metavar='<STR>', type=str,
-                        help='FamilySearch password')
-    parser.add_argument('-i', metavar='<STR>', nargs='+', type=str,
-                        help='List of individual FamilySearch IDs for whom to retrieve ancestors')
-    parser.add_argument('-a', metavar='<INT>', type=int,
-                        default=4, help='Number of generations to ascend [4]')
-    parser.add_argument('-d', metavar='<INT>', type=int,
-                        default=0, help='Number of generations to descend [0]')
-    parser.add_argument('-m', action="store_true", default=False,
-                        help='Add spouses and couples information [False]')
-    parser.add_argument('-r', action="store_true", default=False,
-                        help='Add list of contributors in notes [False]')
-    parser.add_argument('-c', action="store_true", default=False,
-                        help='Add LDS ordinances (need LDS account) [False]')
-    parser.add_argument("-v", action="store_true", default=False,
-                        help="Increase output verbosity [False]")
-    parser.add_argument('-t', metavar='<INT>', type=int,
-                        default=60, help='Timeout in seconds [60]')
+    parser = argparse.ArgumentParser(description='Retrieve GEDCOM data from FamilySearch Tree (4 Jul 2016)', add_help=False, usage='getmyancestors.py -u username -p password [options]')
+    parser.add_argument('-u', metavar='<STR>', type=str, help='FamilySearch username')
+    parser.add_argument('-p', metavar='<STR>', type=str, help='FamilySearch password')
+    parser.add_argument('-i', metavar='<STR>', nargs='+', type=str, help='List of individual FamilySearch IDs for whom to retrieve ancestors')
+    parser.add_argument('-a', metavar='<INT>', type=int, default=4, help='Number of generations to ascend [4]')
+    parser.add_argument('-d', metavar='<INT>', type=int, default=0, help='Number of generations to descend [0]')
+    parser.add_argument('-m', action="store_true", default=False, help='Add spouses and couples information [False]')
+    parser.add_argument('-r', action="store_true", default=False, help='Add list of contributors in notes [False]')
+    parser.add_argument('-c', action="store_true", default=False, help='Add LDS ordinances (need LDS account) [False]')
+    parser.add_argument("-v", action="store_true", default=False, help="Increase output verbosity [False]")
+    parser.add_argument('-t', metavar='<INT>', type=int, default=60, help='Timeout in seconds [60]')
     try:
         parser.add_argument('-o', metavar='<FILE>', type=argparse.FileType('w', encoding='UTF-8'), default=sys.stdout, help='output GEDCOM file [stdout]')
         parser.add_argument('-l', metavar='<FILE>', type=argparse.FileType('w', encoding='UTF-8'), default=sys.stderr, help='output log file [stderr]')
