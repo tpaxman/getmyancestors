@@ -27,6 +27,7 @@ import argparse
 import getpass
 import time
 import asyncio
+import re
 from fsearch_translation import translations
 
 try:
@@ -67,6 +68,10 @@ FACT_EVEN = {
     'http://gedcomx.org/Ethnicity': 'Race',
     'http://familysearch.org/v1/TribeName': 'Tribe Name'
 }
+
+
+def cont(level, string):
+    return re.sub(r'[\r\n]+', '\n' + str(level) + ' CONT ', string)
 
 
 # FamilySearch session class
@@ -279,7 +284,7 @@ class Note:
         self.text = text.strip()
 
     def print(self, file=sys.stdout):
-        file.write('0 @N' + str(self.num) + '@ NOTE ' + self.text.replace('\n', '\n1 CONT ') + '\n')
+        file.write('0 @N' + str(self.num) + '@ NOTE ' + cont(1, self.text) + '\n')
 
     def link(self, file=sys.stdout, level=1):
         file.write(str(level) + ' NOTE @N' + str(self.num) + '@\n')
@@ -317,11 +322,11 @@ class Source:
     def print(self, file=sys.stdout):
         file.write('0 @S' + str(self.num) + '@ SOUR \n')
         if self.title:
-            file.write('1 TITL ' + self.title.replace('\n', '\n2 CONT ') + '\n')
+            file.write('1 TITL ' + cont(2, self.title) + '\n')
         if self.citation:
-            file.write('1 AUTH ' + self.citation.replace('\n', '\n2 CONT ') + '\n')
+            file.write('1 AUTH ' + cont(2, self.citation) + '\n')
         if self.url:
-            file.write('1 PUBL ' + self.url.replace('\n', '\n2 CONT ') + '\n')
+            file.write('1 PUBL ' + cont(2, self.url) + '\n')
         for n in self.notes:
             n.link(file, 1)
         file.write('1 REFN ' + self.fid + '\n')
@@ -362,7 +367,7 @@ class Fact:
         elif self.type:
             file.write('1 EVEN\n2 TYPE ' + self.type)
             if self.value:
-                file.write('\n2 NOTE Description: ' + self.value)
+                file.write('\n2 NOTE Description: ' + cont(3, self.value))
         else:
             return
         file.write('\n')
@@ -388,7 +393,7 @@ class Memorie:
     def print(self, file=sys.stdout):
         file.write('1 OBJE\n2 FORM URL\n')
         if self.description:
-            file.write('2 TITL ' + self.description.replace('\n', '\n2 CONT ') + '\n')
+            file.write('2 TITL ' + cont(2, self.description) + '\n')
         if self.url:
             file.write('2 FILE ' + self.url + '\n')
 
@@ -666,7 +671,7 @@ class Indi:
         for o in self.sources:
             o[0].link(file, 1)
             if len(o) > 1:
-                file.write('2 PAGE ' + o[1].replace('\n', '\n2 CONT ') + '\n')
+                file.write('2 PAGE ' + cont(2, o[1]) + '\n')
 
 
 # GEDCOM family class
@@ -762,7 +767,7 @@ class Fam:
         for o in self.sources:
             o[0].link(file, 1)
             if len(o) > 1:
-                file.write('2 PAGE ' + o[1].replace('\n', '\n2 CONT ') + '\n')
+                file.write('2 PAGE ' + cont(2, o[1]) + '\n')
 
 
 # family tree class

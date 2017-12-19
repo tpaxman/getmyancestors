@@ -225,11 +225,6 @@ class Gedcom:
 
     def __get_fact(self):
         fact = Fact()
-        # if self.tag == 'EVEN':
-        #     self.__get_line()
-        #     fact.type = self.data
-        #     self.__get_line()
-        #     fact.value = self.data[12:]
         if self.tag != 'EVEN':
             fact.type = FACT_TYPES[self.tag]
             fact.value = self.data
@@ -248,6 +243,8 @@ class Gedcom:
                 if num not in self.note:
                     self.note[num] = Note(tree=self.tree, num=num)
                 fact.note = self.note[num]
+            elif self.tag == 'CONT':
+                fact.value += '\n' + self.data
         self.flag = True
         return fact
 
