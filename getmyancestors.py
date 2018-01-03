@@ -589,8 +589,7 @@ class Indi:
         notes = self.tree.fs.get_url('https://familysearch.org/platform/tree/persons/%s/notes.json' % self.fid)
         if notes:
             for n in notes['persons'][0]['notes']:
-                text_note = '===' + n['subject'] + \
-                    '===\n' if 'subject' in n else ''
+                text_note = '=== ' + n['subject'] + ' ===\n' if 'subject' in n else ''
                 text_note += n['text'] + '\n' if 'text' in n else ''
                 self.notes.add(Note(text_note, self.tree))
 
@@ -604,16 +603,16 @@ class Indi:
             for o in data:
                 if o['type'] == u'http://lds.org/Baptism':
                     self.baptism = Ordinance(o)
-                if o['type'] == u'http://lds.org/Confirmation':
+                elif o['type'] == u'http://lds.org/Confirmation':
                     self.confirmation = Ordinance(o)
-                if o['type'] == u'http://lds.org/Endowment':
+                elif o['type'] == u'http://lds.org/Endowment':
                     self.endowment = Ordinance(o)
-                if o['type'] == u'http://lds.org/SealingChildToParents':
+                elif o['type'] == u'http://lds.org/SealingChildToParents':
                     self.sealing_child = Ordinance(o)
                     if 'father' in o and 'mother' in o:
                         famc = (o['father']['resourceId'],
                                 o['mother']['resourceId'])
-                if o['type'] == u'http://lds.org/SealingToSpouse':
+                elif o['type'] == u'http://lds.org/SealingToSpouse':
                     res.append(o)
         return res, famc
 
@@ -727,8 +726,7 @@ class Fam:
             notes = self.tree.fs.get_url('https://familysearch.org/platform/tree/couple-relationships/%s/notes.json' % self.fid)
             if notes:
                 for n in notes['relationships'][0]['notes']:
-                    text_note = '===' + n['subject'] + \
-                        '===\n' if 'subject' in n else ''
+                    text_note = '=== ' + n['subject'] + ' ===\n' if 'subject' in n else ''
                     text_note += n['text'] + '\n' if 'text' in n else ''
                     self.notes.add(Note(text_note, self.tree))
 
