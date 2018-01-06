@@ -302,12 +302,11 @@ class Source:
         else:
             Source.counter += 1
             self.num = Source.counter
-        if tree and data:
-            tree.sources[data['id']] = self
 
         self.url = self.citation = self.title = self.fid = None
         self.notes = set()
 
+    def get_data(self, data):
         if data:
             self.fid = data['id']
             if 'about' in data:
@@ -474,6 +473,7 @@ class Indi:
         else:
             Indi.counter += 1
             self.num = Indi.counter
+        self.downloaded = False
         self.fid = fid
         self.tree = tree
         self.famc_fid = set()
@@ -482,6 +482,7 @@ class Indi:
         self.fams_num = set()
         self.name = None
         self.gender = None
+        self.parents = self.children = self.spouses = None
         self.baptism = self.confirmation = self.endowment = self.sealing_child = None
         self.nicknames = set()
         self.facts = set()
@@ -491,7 +492,10 @@ class Indi:
         self.notes = set()
         self.sources = set()
         self.memories = set()
-        if fid and tree and tree.fs:
+
+    def get_data(self):
+        if fid and tree and tree.fs and not self.downloaded:
+            self.downloaded = True
             url = 'https://familysearch.org/platform/tree/persons/%s.json' % self.fid
             data = tree.fs.get_url(url)
             if data:
@@ -535,10 +539,6 @@ class Indi:
                     if data and 'sourceDescriptions' in data:
                         for y in data['sourceDescriptions']:
                             self.memories.add(Memorie(y))
-
-        self.parents = None
-        self.children = None
-        self.spouses = None
 
     # add a fams to the individual
     def add_fams(self, fams):
@@ -783,6 +783,7 @@ class Tree:
     def add_indi(self, fid):
         if fid and fid not in self.indi:
             self.indi[fid] = Indi(fid, self)
+            self.indi[fid].get_data()
 
     # add family to the family tree
     def add_fam(self, father, mother):
@@ -851,7 +852,9 @@ class Tree:
                 return self.sources[fid]
             data = self.fs.get_url('https://familysearch.org/platform/sources/descriptions/%s.json' % fid)
             if data:
-                return Source(data['sourceDescriptions'][0], self)
+                self.sources[data['sourceDescriptions'][0]['id']] = Source(self)
+                self.sources[data['sourceDescriptions'][0]['id']].get_data(data['sourceDescriptions'][0])
+                return self.sources[data['sourceDescriptions'][0]['id']]
         return False
 
     def reset_num(self):
