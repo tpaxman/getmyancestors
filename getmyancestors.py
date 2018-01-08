@@ -87,6 +87,7 @@ class Session:
         self.timeout = timeout
         self.fid = self.lang = None
         self.login()
+        self.cg = 0
 
     # retrieve FamilySearch session ID (https://familysearch.org/developers/docs/guides/oauth2)
     def login(self):
@@ -210,6 +211,7 @@ class Session:
 
     # retrieve JSON structure from FamilySearch URL
     def get_url(self, url):
+        self.cg += 1
         while True:
             try:
                 if self.verbose:
@@ -364,7 +366,7 @@ class Fact:
         if self.type in FACT_TAGS:
             file.write('1 ' + FACT_TAGS[self.type])
             if self.value:
-                file.write(' ' + self.value)
+                file.write(' ' + cont(2, self.value))
         elif self.type:
             file.write('1 EVEN\n2 TYPE ' + self.type)
             if self.value:
@@ -923,7 +925,7 @@ if __name__ == '__main__':
     # initialize a FamilySearch session and a family tree object
     fs = Session(username, password, args.v, args.l, args.t)
     tree = Tree(fs)
-
+    start = time.time()
     # check LDS account
     if args.c:
         fs.get_url('https://familysearch.org/platform/tree/persons/%s/ordinances.json' % fs.get_userid())
@@ -988,3 +990,5 @@ if __name__ == '__main__':
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
     tree.print(args.o)
+    print(time.time() - start)
+    print(fs.cg)
