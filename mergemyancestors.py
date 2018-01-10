@@ -288,10 +288,7 @@ class Gedcom:
             if self.tag == 'PAGE':
                 page = self.__get_text()
         self.flag = True
-        if page:
-            return (self.sour[num], page)
-        else:
-            return (self.sour[num],)
+        return (self.sour[num], page)
 
     def __get_memorie(self):
         memorie = Memorie()
@@ -361,8 +358,6 @@ if __name__ == '__main__':
 
     indi_counter = 0
     fam_counter = 0
-    note_counter = 0
-    temp_note = None
 
     # read the GEDCOM data
     for file in args.i:
