@@ -342,7 +342,7 @@ class Source:
 class Fact:
 
     def __init__(self, data=None, tree=None):
-        self.value = self.type = self.date = self.place = self.note = None
+        self.value = self.type = self.date = self.place = self.note = self.map = None
         if data:
             if 'value' in data:
                 self.value = data['value']
@@ -357,7 +357,10 @@ class Fact:
             if 'date' in data:
                 self.date = data['date']['original']
             if 'place' in data:
-                self.place = data['place']['original']
+                place = data['place']
+                self.place = place['original']
+                if 'description' in place and place['description'][1:] in tree.places:
+                    self.map = tree.places[place['description'][1:]]
             if 'changeMessage' in data['attribution']:
                 self.note = Note(data['attribution']['changeMessage'], tree)
             if self.type == 'http://gedcomx.org/Death' and not (self.date or self.place):
@@ -379,6 +382,9 @@ class Fact:
             file.write('2 DATE ' + self.date + '\n')
         if self.place:
             file.write('2 PLAC ' + self.place + '\n')
+        if self.map:
+            latitude, longitude = self.map
+            file.write('3 MAP\n4 LATI ' + latitude + '\n4 LONG ' + longitude + '\n')
         if self.note:
             self.note.link(file, 2)
 
@@ -754,6 +760,7 @@ class Tree:
         self.fam = dict()
         self.notes = list()
         self.sources = dict()
+        self.places = dict()
 
     # add individuals to the family tree
     def add_indis(self, fids):
@@ -771,6 +778,10 @@ class Tree:
             print(len(new_fids))
             data = self.fs.get_url('https://familysearch.org/platform/tree/persons.json?pids=' + ','.join(new_fids[:MAX_PERSONS]))
             if data:
+                if 'places' in data:
+                    for place in data['places']:
+                        if place['id'] not in self.places:
+                            self.places[place['id']] = (str(place['latitude']), str(place['longitude']))
                 loop.run_until_complete(add_datas(loop, data))
                 if 'childAndParentsRelationships' in data:
                     for rel in data['childAndParentsRelationships']:

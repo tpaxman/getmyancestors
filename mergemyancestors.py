@@ -191,38 +191,6 @@ class Gedcom:
             self.indi[self.num].birthnames.add(name)
         self.flag = True
 
-    def __get_birt(self):
-        while self.__get_line() and self.level > 1:
-            if self.tag == 'DATE':
-                self.indi[self.num].birtdate = self.data
-            elif self.tag == 'PLAC':
-                self.indi[self.num].birtplac = self.data
-        self.flag = True
-
-    def __get_chr(self):
-        while self.__get_line() and self.level > 1:
-            if self.tag == 'DATE':
-                self.indi[self.num].chrdate = self.data
-            elif self.tag == 'PLAC':
-                self.indi[self.num].chrplac = self.data
-        self.flag = True
-
-    def __get_deat(self):
-        while self.__get_line() and self.level > 1:
-            if self.tag == 'DATE':
-                self.indi[self.num].deatdate = self.data
-            elif self.tag == 'PLAC':
-                self.indi[self.num].deatplac = self.data
-        self.flag = True
-
-    def __get_buri(self):
-        while self.__get_line() and self.level > 1:
-            if self.tag == 'DATE':
-                self.indi[self.num].buridate = self.data
-            elif self.tag == 'PLAC':
-                self.indi[self.num].buriplac = self.data
-        self.flag = True
-
     def __get_fact(self):
         fact = Fact()
         if self.tag != 'EVEN':
@@ -235,6 +203,8 @@ class Gedcom:
                 fact.date = self.data
             elif self.tag == 'PLAC':
                 fact.place = self.data
+            elif self.tag == 'MAP':
+                fact.map = self.__get_map()
             elif self.tag == 'NOTE':
                 if self.data[:12] == 'Description:':
                     fact.value = self.data[13:]
@@ -247,6 +217,17 @@ class Gedcom:
                 fact.value += '\n' + self.data
         self.flag = True
         return fact
+
+    def __get_map(self):
+        latitude = None
+        longitude = None
+        while self.__get_line() and self.level > 3:
+            if self.tag == 'LATI':
+                latitude = self.data
+            elif self.tag == 'LONG':
+                longitude = self.data
+        self.flag = True
+        return (latitude, longitude)
 
     def __get_text(self):
         text = self.data
