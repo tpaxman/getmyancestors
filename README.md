@@ -7,13 +7,13 @@ It is meant to be a replacement for the GetMyAncestors program from Ohana Softwa
 
 This program is now in production phase, but bugs might still be present. Features will be added on request. It is provided as is.
 
-This script requires python3 and the requests module to work. To install this module on Linux, run in your terminal: "python3 -m pip install requests" (or "python3 -m pip install --user requests" if you don't have admin rights on your machine). Alternatively, on Windows and Mac, you can install the Anaconda package (download the python 3.5 installer from https://www.continuum.io/downloads) which will provide both python3 and the requests module.
+This script requires python3 and the requests module to work. To install this module on Linux, run in your terminal: "python3 -m pip install requests" (or "python3 -m pip install --user requests" if you don't have admin rights on your machine). Alternatively, on Windows and Mac, you can install the Anaconda package (download the python 3.6 installer from https://www.continuum.io/downloads) which will provide both python3 and the requests module.
 
-This script requires python 3.4 (or higher) to run due to some novel features in the argparse module (https://docs.python.org/3/whatsnew/3.4.html#argparse)
+This script requires python 3.4 (or higher) to run due to some novel features in the argparse and asyncio modules (https://docs.python.org/3/whatsnew/3.4.html)
 
 To download the script, click on the green button "Clone or download" on the top of this page and then click on "Download ZIP".
 
-Current version was updated on July 4th 2016.
+Current version was updated on January 11th 2018.
 
 Examples
 ========
