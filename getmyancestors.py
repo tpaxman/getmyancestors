@@ -855,7 +855,7 @@ class Tree:
     def add_children(self, fids):
         rels = set()
         for fid in fids:
-            rels |= self.indi[fid].children
+            rels |= self.indi[fid].children if fid in self.indi else set()
         children = set()
         if rels:
             self.add_indis(set.union(*(set(rel) for rel in rels)))

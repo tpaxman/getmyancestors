@@ -202,7 +202,7 @@ class Gedcom:
             if self.tag == 'DATE':
                 fact.date = self.data
             elif self.tag == 'PLAC':
-                fact.place = self.data
+                fact.place = self.__get_text()
             elif self.tag == 'MAP':
                 fact.map = self.__get_map()
             elif self.tag == 'NOTE':
