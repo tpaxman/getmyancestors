@@ -89,6 +89,7 @@ class Session:
         self.timeout = timeout
         self.fid = self.lang = None
         self.login()
+        self.counter = 0
 
     # retrieve FamilySearch session ID (https://familysearch.org/developers/docs/guides/oauth2)
     def login(self):
@@ -212,6 +213,7 @@ class Session:
 
     # retrieve JSON structure from FamilySearch URL
     def get_url(self, url):
+        self.counter += 1
         while True:
             try:
                 if self.verbose:
@@ -548,13 +550,11 @@ class Indi:
 
     # add a fams to the individual
     def add_fams(self, fams):
-        if fams not in self.fams_fid:
-            self.fams_fid.add(fams)
+        self.fams_fid.add(fams)
 
     # add a famc to the individual
     def add_famc(self, famc):
-        if famc not in self.famc_fid:
-            self.famc_fid.add(famc)
+        self.famc_fid.add(famc)
 
     # retrieve individual notes
     def get_notes(self):
@@ -940,7 +940,10 @@ if __name__ == '__main__':
     username = args.u if args.u else input("Enter FamilySearch username: ")
     password = args.p if args.p else getpass.getpass("Enter FamilySearch password: ")
 
+    time_count = time.time()
+
     # initialize a FamilySearch session and a family tree object
+    print('Login to FamilySearch...')
     fs = Session(username, password, args.v, args.l, args.t)
     tree = Tree(fs)
 
@@ -950,24 +953,32 @@ if __name__ == '__main__':
 
     # add list of starting individuals to the family tree
     todo = args.i if args.i else [fs.get_userid()]
+    print(fs._('Download starting individuals...'))
     tree.add_indis(todo)
 
     # download ancestors
     todo = set(todo)
     done = set()
     for i in range(args.a):
+        if not todo:
+            break
         done |= todo
+        print(fs._('Download ') + str(i + 1) + fs._('th generation of ancestors...'))
         todo = tree.add_parents(todo) - done
 
     # download descendants
     todo = set(tree.indi.keys())
     done = set()
     for i in range(args.d):
+        if not todo:
+            break
         done |= todo
+        print(fs._('Download ') + str(i + 1) + fs._('th generation of descendants...'))
         todo = tree.add_children(todo) - done
 
     # download spouses
     if args.m:
+        print(fs._('Download spouses and marriage information...'))
         todo = set(tree.indi.keys())
         tree.add_spouses(todo)
 
@@ -988,8 +999,10 @@ if __name__ == '__main__':
             await future
 
     loop = asyncio.get_event_loop()
+    print(fs._('Download notes') + (((',' if args.r else fs._(' and')) + fs._(' ordinances')) if args.c else '') + (fs._(' and contributors') if args.r else '') + '...')
     loop.run_until_complete(download_stuff(loop))
 
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
     tree.print(args.o)
+    print(fs._('Downloaded %s individuals, %s families, %s sources and %s notes in %s seconds with %s HTTP requests.') % (str(len(tree.indi)), str(len(tree.fam)), str(len(tree.sources)), str(len(tree.notes)), str(round(time.time() - time_count)), str(fs.counter)))

@@ -98,4 +98,35 @@ translations = {
         'ru': 'Название племени',
         'zh': '部落名字'
     },
+    'Download starting individuals...': {
+        'fr': 'Téléchargement des personnes de départ...',
+    },
+    'th generation of ancestors...': {
+        'fr': 'e génération d\'ancêtres...',
+    },
+    'th generation of descendants...': {
+        'fr': 'e génération de descendants...',
+    },
+    'Download spouses and marriage information...': {
+        'fr': 'Téléchargement des conjoints de des information de mariage...',
+    },
+    'Download notes': {
+        'fr': 'Téléchargement des notes',
+    },
+    ' and': {
+        'fr': ' et',
+    },
+    ' ordinances': {
+        'fr': ' des ordonnances',
+    },
+    ' and contributors': {
+        'fr': ' et des contributeurs',
+    },
+    'Downloaded %s individuals, %s families, %s sources and %s notes in %s seconds with %s HTTP requests.': {
+        'fr': '%s personnes, %s familles, %s sources et %s notes téléchargés en %s secondes avec %s requêtes HTTP.',
+    },
+    'Download ': {
+        'fr': 'Téléchargement de la ',
+    },
+
 }
