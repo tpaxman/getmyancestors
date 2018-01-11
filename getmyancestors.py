@@ -298,7 +298,7 @@ class Source:
 
     counter = 0
 
-    def __init__(self, tree=None, num=None):
+    def __init__(self, data=None, tree=None, num=None):
         if num:
             self.num = num
         else:
@@ -308,8 +308,6 @@ class Source:
         self.tree = tree
         self.url = self.citation = self.title = self.fid = None
         self.notes = set()
-
-    def add_data(self, data):
         if data:
             self.fid = data['id']
             if 'about' in data:
@@ -381,7 +379,7 @@ class Fact:
         if self.date:
             file.write('2 DATE ' + self.date + '\n')
         if self.place:
-            file.write('2 PLAC ' + self.place + '\n')
+            file.write('2 PLAC ' + cont(3, self.place) + '\n')
         if self.map:
             latitude, longitude = self.map
             file.write('3 MAP\n4 LATI ' + latitude + '\n4 LONG ' + longitude + '\n')
@@ -539,8 +537,7 @@ class Indi:
                         quotes[quote['descriptionId']] = quote['attribution']['changeMessage'] if 'changeMessage' in quote['attribution'] else None
                     for source in sources['sourceDescriptions']:
                         if source['id'] not in self.tree.sources:
-                            self.tree.sources[source['id']] = Source(self.tree)
-                            self.tree.sources[source['id']].add_data(source)
+                            self.tree.sources[source['id']] = Source(source, self.tree)
                         self.sources.add((self.tree.sources[source['id']], quotes[source['id']]))
             if 'evidence' in data:
                 url = 'https://familysearch.org/platform/tree/persons/%s/memories.json' % self.fid
@@ -693,12 +690,10 @@ class Fam:
                         quotes[x['descriptionId']] = x['attribution']['changeMessage'] if 'changeMessage' in x['attribution'] else None
                     new_sources = quotes.keys() - self.tree.sources.keys()
                     if new_sources:
-                        for source_fid in new_sources:
-                            self.tree.sources[source_fid] = Source(self.tree)
                         sources = self.tree.fs.get_url('https://familysearch.org/platform/tree/couple-relationships/%s/sources.json' % self.fid)
                         for source in sources['sourceDescriptions']:
-                            if source['id'] in new_sources:
-                                self.tree.sources[source['id']].add_data(source)
+                            if source['id'] in new_sources and source['id'] not in self.tree.sources:
+                                self.tree.sources[source['id']] = Source(source, self.tree)
                     for source_fid in quotes:
                         self.sources.add((self.tree.sources[source_fid], quotes[source_fid]))
 
@@ -775,7 +770,6 @@ class Tree:
         new_fids = [fid for fid in fids if fid and fid not in self.indi]
         loop = asyncio.get_event_loop()
         while len(new_fids):
-            print(len(new_fids))
             data = self.fs.get_url('https://familysearch.org/platform/tree/persons.json?pids=' + ','.join(new_fids[:MAX_PERSONS]))
             if data:
                 if 'places' in data:
