@@ -78,7 +78,6 @@ FACT_EVEN = {
 def cont(level, string):
     return re.sub(r'[\r\n]+', '\n' + str(level) + ' CONT ', string)
 
-
 # FamilySearch session class
 class Session:
     def __init__(self, username, password, verbose=False, logfile=sys.stderr, timeout=60):
@@ -88,8 +87,8 @@ class Session:
         self.logfile = logfile
         self.timeout = timeout
         self.fid = self.lang = None
-        self.login()
         self.counter = 0
+        self.login()
 
     # retrieve FamilySearch session ID (https://familysearch.org/developers/docs/guides/oauth2)
     def login(self):
@@ -246,11 +245,17 @@ class Session:
                         self.logfile.write('Unable to get ordinances. Try with an LDS account or without option -c.\n')
                         exit()
                     else:
-                        self.logfile.write('Warning code 403 link: ' + url + ' ' + r.json()['errors'][0]['message'] or '')
+                        self.logfile.write('WARNING: code 403 from ' + url + ' ' + r.json()['errors'][0]['message'] or '')
                         return None
                 time.sleep(self.timeout)
+
                 continue
-            return r.json()
+            try:
+                return r.json()
+            except:
+                if self.verbose:
+                    self.logfile.write('WARNING: corrupted file from ' + url + '\n')
+                return None
 
     # retrieve FamilySearch current user ID
     def set_current(self):
@@ -819,12 +824,12 @@ class Tree:
     # add parents relationships
     def add_parents(self, fids):
         parents = set()
-        for fid in fids:
+        for fid in (fids & self.indi.keys()):
             for couple in self.indi[fid].parents:
                 parents |= set(couple)
         if parents:
             self.add_indis(parents)
-        for fid in fids:
+        for fid in (fids & self.indi.keys()):
             for father, mother in self.indi[fid].parents:
                 if father or mother:
                     self.add_trio(father, mother, fid)
@@ -840,21 +845,22 @@ class Tree:
                 await future
 
         rels = set()
-        for fid in fids:
+        for fid in (fids & self.indi.keys()):
             rels |= self.indi[fid].spouses
         loop = asyncio.get_event_loop()
         if rels:
             self.add_indis(set.union(*({father, mother} for father, mother, relfid in rels)))
             for father, mother, relfid in rels:
-                self.indi[father].add_fams((father, mother))
-                self.indi[mother].add_fams((father, mother))
-                self.add_fam(father, mother)
+                if father in self.indi and mother in self.indi:
+                    self.indi[father].add_fams((father, mother))
+                    self.indi[mother].add_fams((father, mother))
+                    self.add_fam(father, mother)
             loop.run_until_complete(add(loop, rels))
 
     # add children relationships
     def add_children(self, fids):
         rels = set()
-        for fid in fids:
+        for fid in (fids & self.indi.keys()):
             rels |= self.indi[fid].children if fid in self.indi else set()
         children = set()
         if rels:
@@ -866,16 +872,17 @@ class Tree:
 
     # retrieve ordinances
     def add_ordinances(self, fid):
-        ret, famc = self.indi[fid].get_ordinances()
-        if famc and famc in self.fam:
-            self.indi[fid].sealing_child.famc = self.fam[famc]
-        for o in ret:
-            if (fid, o['spouse']['resourceId']) in self.fam:
-                self.fam[(fid, o['spouse']['resourceId'])
-                         ].sealing_spouse = Ordinance(o)
-            elif (o['spouse']['resourceId'], fid) in self.fam:
-                self.fam[(o['spouse']['resourceId'], fid)
-                         ].sealing_spouse = Ordinance(o)
+        if fid in self.indi:
+            ret, famc = self.indi[fid].get_ordinances()
+            if famc and famc in self.fam:
+                self.indi[fid].sealing_child.famc = self.fam[famc]
+            for o in ret:
+                if (fid, o['spouse']['resourceId']) in self.fam:
+                    self.fam[(fid, o['spouse']['resourceId'])
+                             ].sealing_spouse = Ordinance(o)
+                elif (o['spouse']['resourceId'], fid) in self.fam:
+                    self.fam[(o['spouse']['resourceId'], fid)
+                             ].sealing_spouse = Ordinance(o)
 
     def reset_num(self):
         for husb, wife in self.fam:
