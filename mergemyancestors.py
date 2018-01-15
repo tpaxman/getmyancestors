@@ -29,14 +29,17 @@ import sys
 import argparse
 
 # local import
-from getmyancestors import FACT_TAGS, Indi, Fam, Tree, Name, Note, Fact, Source, Ordinance, Memorie
+from getmyancestors import *
 
 sys.path.append(os.path.dirname(sys.argv[0]))
 
-FACT_TYPES = dict()
 
-for key, value in FACT_TAGS.items():
-    FACT_TYPES[value] = key
+def reversed_dict(d):
+    return {val: key for key, val in d.items()}
+
+
+FACT_TYPES = reversed_dict(FACT_TAGS)
+ORDINANCES = reversed_dict(ORDINANCES_STATUS)
 
 
 class Gedcom:
@@ -293,7 +296,7 @@ class Gedcom:
             elif self.tag == 'TEMP':
                 ordinance.temple_code = self.data
             elif self.tag == 'STAT':
-                ordinance.status = self.data
+                ordinance.status = ORDINANCES[self.data]
             elif self.tag == 'FAMC':
                 num = int(self.data[2:len(self.data) - 1])
                 if num not in self.fam:

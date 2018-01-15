@@ -31,7 +31,7 @@ import asyncio
 import re
 
 # local import
-from fsearch_translation import translations
+from translation import translations
 
 try:
     import requests
@@ -72,6 +72,14 @@ FACT_EVEN = {
     'http://gedcomx.org/NationalId': 'National Identification',
     'http://gedcomx.org/Ethnicity': 'Race',
     'http://familysearch.org/v1/TribeName': 'Tribe Name'
+}
+
+ORDINANCES_STATUS = {
+    'http://familysearch.org/v1/Ready': 'QUALIFIED',
+    'http://familysearch.org/v1/Completed': 'COMPLETED',
+    'http://familysearch.org/v1/Cancelled': 'CANCELED',
+    'http://familysearch.org/v1/InProgress': 'SUBMITTED',
+    'http://familysearch.org/v1/NotNeeded': 'INFANT'
 }
 
 
@@ -211,7 +219,10 @@ class Session:
                 time.sleep(self.timeout)
                 continue
             self.write_log('Status code: %s\n' % str(r.status_code))
-            if r.status_code in {204, 404, 405, 410}:
+            if r.status_code == 204:
+                return None
+            if r.status_code in {404, 405, 410, 500}:
+                self.write_log('WARNING: ' + url)
                 return None
             if r.status_code == 401:
                 self.login()
@@ -436,20 +447,15 @@ class Ordinance:
                 self.date = data['date']['formal']
             if 'templeCode' in data:
                 self.temple_code = data['templeCode']
-            if data['status'] == u'http://familysearch.org/v1/Completed':
-                self.status = 'COMPLETED'
-            if data['status'] == u'http://familysearch.org/v1/Cancelled':
-                self.status = 'CANCELED'
-            if data['status'] == u'http://familysearch.org/v1/InProgress':
-                self.status = 'SUBMITTED'
+            self.status = data['status']
 
     def print(self, file=sys.stdout):
         if self.date:
             file.write('2 DATE ' + self.date + '\n')
         if self.temple_code:
             file.write('2 TEMP ' + self.temple_code + '\n')
-        if self.status:
-            file.write('2 STAT ' + self.status + '\n')
+        if self.status in ORDINANCES_STATUS:
+            file.write('2 STAT ' + ORDINANCES_STATUS[self.status] + '\n')
         if self.famc:
             file.write('2 FAMC @F' + str(self.famc.num) + '@\n')
 
@@ -819,7 +825,8 @@ class Tree:
         async def add(loop, rels):
             futures = set()
             for father, mother, relfid in rels:
-                futures.add(loop.run_in_executor(None, self.fam[(father, mother)].add_marriage, relfid))
+                if (father, mother) in self.fam:
+                    futures.add(loop.run_in_executor(None, self.fam[(father, mother)].add_marriage, relfid))
             for future in futures:
                 await future
 

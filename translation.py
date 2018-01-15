@@ -108,7 +108,7 @@ translations = {
         'fr': 'e génération de descendants...',
     },
     'Download spouses and marriage information...': {
-        'fr': 'Téléchargement des conjoints de des information de mariage...',
+        'fr': 'Téléchargement des conjoints et des informations de mariage...',
     },
     'Download notes': {
         'fr': 'Téléchargement des notes',
