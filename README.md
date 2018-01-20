@@ -13,7 +13,7 @@ This script requires python 3.4 (or higher) to run due to some novel features in
 
 To download the script, click on the green button "Clone or download" on the top of this page and then click on "Download ZIP".
 
-Current version was updated on January 15th 2018.
+Current version was updated on January 20th 2018.
 
 Examples
 ========
