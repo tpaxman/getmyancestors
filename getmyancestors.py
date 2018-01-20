@@ -102,76 +102,76 @@ class Session:
     # Write in logfile if verbose enabled
     def write_log(self, text):
         if self.verbose:
-            self.logfile.write('[%s]: %s' % (time.strftime('%Y-%m-%d %H:%M:%S'), text))
+            self.logfile.write('[%s]: %s\n' % (time.strftime('%Y-%m-%d %H:%M:%S'), text))
 
     # retrieve FamilySearch session ID (https://familysearch.org/developers/docs/guides/oauth2)
     def login(self):
         while True:
             try:
                 url = 'https://www.familysearch.org/auth/familysearch/login'
-                self.write_log('Downloading: %s\n' % url)
+                self.write_log('Downloading: ' + url)
                 r = requests.get(url, params={'ldsauth': False}, allow_redirects=False)
                 url = r.headers['Location']
-                self.write_log('Downloading: %s\n' % url)
+                self.write_log('Downloading: ' + url)
                 r = requests.get(url, allow_redirects=False)
                 idx = r.text.index('name="params" value="')
                 span = r.text[idx + 21:].index('"')
                 params = r.text[idx + 21:idx + 21 + span]
 
                 url = 'https://ident.familysearch.org/cis-web/oauth2/v3/authorization'
-                self.write_log('Downloading: %s\n' % url)
+                self.write_log('Downloading: ' + url)
                 r = requests.post(url, data={'params': params, 'userName': self.username, 'password': self.password}, allow_redirects=False)
 
                 if 'The username or password was incorrect' in r.text:
-                    self.write_log('The username or password was incorrect\n')
+                    self.write_log('The username or password was incorrect')
                     exit()
 
                 if 'Invalid Oauth2 Request' in r.text:
-                    self.write_log('Invalid Oauth2 Request\n')
+                    self.write_log('Invalid Oauth2 Request')
                     time.sleep(self.timeout)
                     continue
 
                 url = r.headers['Location']
-                self.write_log('Downloading: %s\n' % url)
+                self.write_log('Downloading: ' + url)
                 r = requests.get(url, allow_redirects=False)
                 self.fssessionid = r.cookies['fssessionid']
             except requests.exceptions.ReadTimeout:
-                self.write_log('Read timed out\n')
+                self.write_log('Read timed out')
                 continue
             except requests.exceptions.ConnectionError:
-                self.write_log('Connection aborted\n')
+                self.write_log('Connection aborted')
                 time.sleep(self.timeout)
                 continue
             except requests.exceptions.HTTPError:
-                self.write_log('HTTPError\n')
+                self.write_log('HTTPError')
                 time.sleep(self.timeout)
                 continue
             except KeyError:
-                self.write_log('KeyError\n')
+                self.write_log('KeyError')
                 time.sleep(self.timeout)
                 continue
             except ValueError:
-                self.write_log('ValueError\n')
+                self.write_log('ValueError')
                 time.sleep(self.timeout)
                 continue
-            self.write_log('FamilySearch session id: %s\n' % self.fssessionid)
+            self.write_log('FamilySearch session id: ' + self.fssessionid)
             return
 
     # retrieve FamilySearch developer key (wget -O- --max-redirect 0 https://familysearch.org/auth/familysearch/login?ldsauth=false)
     def get_key(self):
         url = 'https://familysearch.org/auth/familysearch/login'
         while True:
-            self.write_log('Downloading: %s\n' % url)
+            self.write_log('Downloading: ' + url)
             try:
                 r = requests.get(url, params={'ldsauth': False}, allow_redirects=False, timeout=self.timeout)
                 location = r.headers['Location']
                 idx = location.index('client_id=')
                 key = location[idx + 10:idx + 49]
             except ValueError:
-                self.write_log('FamilySearch developer key not found\n')
+                self.write_log('FamilySearch developer key not found')
                 time.sleep(self.timeout)
                 continue
-            self.write_log('FamilySearch developer key: %s\n' % key)
+            self.write_log('FamilySearch developer key: ' + key)
             return key
 
     # retrieve FamilySearch session ID (https://familysearch.org/developers/docs/guides/oauth1/login)
@@ -179,28 +179,28 @@ class Session:
         url = 'https://api.familysearch.org/identity/v2/login'
         data = {'key': self.key, 'username': self.username, 'password': self.password}
         while True:
-            self.write_log('Downloading: %s\n' % url)
+            self.write_log('Downloading: ' + url)
             try:
                 r = requests.post(url, data, timeout=self.timeout)
             except requests.exceptions.ReadTimeout:
-                self.write_log('Read timed out\n')
+                self.write_log('Read timed out')
                 continue
             except requests.exceptions.ConnectionError:
-                self.write_log('Connection aborted\n')
+                self.write_log('Connection aborted')
                 time.sleep(self.timeout)
                 continue
-            self.write_log('Status code: %s\n' % str(r.status_code))
+            self.write_log('Status code: ' + str(r.status_code))
             if r.status_code == 401:
-                self.write_log('Login failure\n')
+                self.write_log('Login failure')
                 raise Exception('Login failure')
             try:
                 r.raise_for_status()
             except requests.exceptions.HTTPError:
-                self.write_log('HTTPError\n')
+                self.write_log('HTTPError')
                 time.sleep(self.timeout)
                 continue
             self.fssessionid = r.cookies['fssessionid']
-            self.write_log('FamilySearch session id: %s\n' % self.fssessionid)
+            self.write_log('FamilySearch session id: ' + self.fssessionid)
             return
 
     # retrieve JSON structure from FamilySearch URL
@@ -208,17 +208,17 @@ class Session:
         self.counter += 1
         while True:
             try:
-                self.write_log('Downloading: %s\n' % url)
+                self.write_log('Downloading: ' + url)
                 # r = requests.get(url, cookies = { 's_vi': self.s_vi, 'fssessionid' : self.fssessionid }, timeout = self.timeout)
                 r = requests.get('https://familysearch.org' + url, cookies={'fssessionid': self.fssessionid}, timeout=self.timeout)
             except requests.exceptions.ReadTimeout:
-                self.write_log('Read timed out\n')
+                self.write_log('Read timed out')
                 continue
             except requests.exceptions.ConnectionError:
-                self.write_log('Connection aborted\n')
+                self.write_log('Connection aborted')
                 time.sleep(self.timeout)
                 continue
-            self.write_log('Status code: %s\n' % str(r.status_code))
+            self.write_log('Status code: ' + str(r.status_code))
             if r.status_code == 204:
                 return None
             if r.status_code in {404, 405, 410, 500}:
@@ -230,10 +230,10 @@ class Session:
             try:
                 r.raise_for_status()
             except requests.exceptions.HTTPError:
-                self.write_log('HTTPError\n')
+                self.write_log('HTTPError')
                 if r.status_code == 403:
                     if 'message' in r.json()['errors'][0] and r.json()['errors'][0]['message'] == u'Unable to get ordinances.':
-                        self.write_log('Unable to get ordinances. Try with an LDS account or without option -c.\n')
+                        self.write_log('Unable to get ordinances. Try with an LDS account or without option -c.')
                         exit()
                     else:
 
@@ -244,7 +244,7 @@ class Session:
             try:
                 return r.json()
             except:
-                self.write_log('WARNING: corrupted file from %s\n' % url)
+                self.write_log('WARNING: corrupted file from ' + url)
                 return None
 
     # retrieve FamilySearch current user ID
@@ -816,7 +816,7 @@ class Tree:
             self.add_indis(parents)
         for fid in (fids & self.indi.keys()):
             for father, mother in self.indi[fid].parents:
-                if father or mother:
+                if mother in self.indi and father in self.indi or not father and mother in self.indi or not mother and father in self.indi:
                     self.add_trio(father, mother, fid)
         return set(filter(None, parents))
 
@@ -852,8 +852,9 @@ class Tree:
         if rels:
             self.add_indis(set.union(*(set(rel) for rel in rels)))
             for father, mother, child in rels:
-                self.add_trio(father, mother, child)
-                children.add(child)
+                if child in self.indi and (mother in self.indi and father in self.indi or not father and mother in self.indi or not mother and father in self.indi):
+                    self.add_trio(father, mother, child)
+                    children.add(child)
         return children
 
     # retrieve ordinances
