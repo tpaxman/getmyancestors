@@ -931,6 +931,11 @@ if __name__ == '__main__':
         parser.print_help()
         exit(2)
 
+    for fid in args.i:
+        if not re.match(r'[A-Z0-9]{4}-[A-Z0-9]{3}', fid):
+            print('Invalid FamilySearch ID: ' + fid)
+            exit(2)
+
     username = args.u if args.u else input("Enter FamilySearch username: ")
     password = args.p if args.p else getpass.getpass("Enter FamilySearch password: ")
 
