@@ -97,7 +97,7 @@ class Session:
         self.timeout = timeout
         self.fid = self.lang = None
         self.counter = 0
-        self.login()
+        self.logged = self.login()
 
     # Write in logfile if verbose enabled
     def write_log(self, text):
@@ -124,7 +124,7 @@ class Session:
 
                 if 'The username or password was incorrect' in r.text:
                     self.write_log('The username or password was incorrect')
-                    exit()
+                    return False
 
                 if 'Invalid Oauth2 Request' in r.text:
                     self.write_log('Invalid Oauth2 Request')
@@ -155,7 +155,7 @@ class Session:
                 time.sleep(self.timeout)
                 continue
             self.write_log('FamilySearch session id: ' + self.fssessionid)
-            return
+            return True
 
     # retrieve FamilySearch developer key (wget -O- --max-redirect 0 https://familysearch.org/auth/familysearch/login?ldsauth=false)
     def get_key(self):
@@ -234,7 +234,7 @@ class Session:
                 if r.status_code == 403:
                     if 'message' in r.json()['errors'][0] and r.json()['errors'][0]['message'] == u'Unable to get ordinances.':
                         self.write_log('Unable to get ordinances. Try with an LDS account or without option -c.')
-                        exit()
+                        return 'error'
                     else:
 
                         self.write_log('WARNING: code 403 from %s %s' % (url, r.json()['errors'][0]['message'] or ''))
@@ -944,15 +944,18 @@ if __name__ == '__main__':
     # initialize a FamilySearch session and a family tree object
     print('Login to FamilySearch...')
     fs = Session(username, password, args.v, args.l, args.t)
+    if not fs.logged:
+        exit(2)
+    _ = fs._
     tree = Tree(fs)
 
     # check LDS account
-    if args.c:
-        fs.get_url('/platform/tree/persons/%s/ordinances.json' % fs.get_userid())
+    if args.c and fs.get_url('/platform/tree/persons/%s/ordinances.json' % fs.get_userid()) == 'error':
+        exit(2)
 
     # add list of starting individuals to the family tree
     todo = args.i if args.i else [fs.get_userid()]
-    print(fs._('Download starting individuals...'))
+    print(_('Download starting individuals...'))
     tree.add_indis(todo)
 
     # download ancestors
@@ -962,7 +965,7 @@ if __name__ == '__main__':
         if not todo:
             break
         done |= todo
-        print(fs._('Download ') + str(i + 1) + fs._('th generation of ancestors...'))
+        print(_('Download ') + str(i + 1) + _('th generation of ancestors...'))
         todo = tree.add_parents(todo) - done
 
     # download descendants
@@ -972,12 +975,12 @@ if __name__ == '__main__':
         if not todo:
             break
         done |= todo
-        print(fs._('Download ') + str(i + 1) + fs._('th generation of descendants...'))
+        print(_('Download ') + str(i + 1) + _('th generation of descendants...'))
         todo = tree.add_children(todo) - done
 
     # download spouses
     if args.m:
-        print(fs._('Download spouses and marriage information...'))
+        print(_('Download spouses and marriage information...'))
         todo = set(tree.indi.keys())
         tree.add_spouses(todo)
 
@@ -998,10 +1001,10 @@ if __name__ == '__main__':
             await future
 
     loop = asyncio.get_event_loop()
-    print(fs._('Download notes') + (((',' if args.r else fs._(' and')) + fs._(' ordinances')) if args.c else '') + (fs._(' and contributors') if args.r else '') + '...')
+    print(_('Download notes') + (((',' if args.r else _(' and')) + _(' ordinances')) if args.c else '') + (_(' and contributors') if args.r else '') + '...')
     loop.run_until_complete(download_stuff(loop))
 
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
     tree.print(args.o)
-    print(fs._('Downloaded %s individuals, %s families, %s sources and %s notes in %s seconds with %s HTTP requests.') % (str(len(tree.indi)), str(len(tree.fam)), str(len(tree.sources)), str(len(tree.notes)), str(round(time.time() - time_count)), str(fs.counter)))
+    print(_('Downloaded %s individuals, %s families, %s sources and %s notes in %s seconds with %s HTTP requests.') % (str(len(tree.indi)), str(len(tree.fam)), str(len(tree.sources)), str(len(tree.notes)), str(round(time.time() - time_count)), str(fs.counter)))
