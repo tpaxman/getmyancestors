@@ -79,7 +79,7 @@ class Options(Frame):
         askfilename.pack()
 
     def askfilename(self):
-        self.filename = filedialog.asksaveasfilename()
+        self.filename = filedialog.asksaveasfilename(title='Save as', filetypes=(('GEDCOM files', '.ged'), ('All files', '*.*')))
 
     def add_indi(self, data=None):
         new_indi = StartIndi(self.indis)
