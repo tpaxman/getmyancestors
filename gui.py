@@ -87,8 +87,8 @@ class Options(Frame):
         if data and 'persons' in data:
             indi = data['persons'][0]
             new_indi.fid.set(indi['id'])
-            if 'names' in data:
-                for name in data['names']:
+            if 'names' in data['persons'][0]:
+                for name in data['persons'][0]['names']:
                     if name['preferred']:
                         new_indi.label_fid['text'] = name['nameForms'][0]['fullText']
                         break
