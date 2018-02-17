@@ -107,7 +107,7 @@ class Options(Frame):
 
 class Gui(Frame):
     def __init__(self, window, **kwargs):
-        super(Gui, self).__init__(window, borderwidth=10, **kwargs)
+        super(Gui, self).__init__(window, borderwidth=20, **kwargs)
         self.fs = None
         self.tree = None
         self.filename = None
@@ -219,5 +219,6 @@ class Gui(Frame):
 
 
 window = Tk()
+window.title('Getmyancestors')
 sign_in = Gui(window)
 sign_in.mainloop()
