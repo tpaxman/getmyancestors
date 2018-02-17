@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from tkinter import Tk, Frame, Label, Entry, StringVar, Button, IntVar, Checkbutton, filedialog, messagebox
+from tkinter import Tk, StringVar, IntVar, filedialog, messagebox
+from tkinter.ttk import Frame, Label, Entry, Button, Checkbutton
 from getmyancestors import Session, Tree
 import asyncio
 import re
@@ -119,7 +120,7 @@ class Gui(Frame):
         self.title = Label(self, text='Sign In to FamilySearch')
         buttons = Frame(self)
         self.btn_quit = Button(buttons, text='Quit', command=self.quit)
-        self.btn_valid = Button(buttons, text='Sign In', fg='red', command=self.login)
+        self.btn_valid = Button(buttons, text='Sign In', command=self.login)
         self.title.pack()
         self.sign_in.pack()
         self.form.pack()
