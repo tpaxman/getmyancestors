@@ -3,11 +3,9 @@ getmyancestors
 
 getmyancestors.py is a python3 script that downloads family trees in GEDCOM format from FamilySearch.
 
-It is meant to be a replacement for the GetMyAncestors program from Ohana Software (previously available at http://www.ohanasoftware.com/?sec=downloads&page=GetMyAncestors).
-
 This program is now in production phase, but bugs might still be present. Features will be added on request. It is provided as is.
 
-This script requires python3 and the requests module to work. To install this module on Linux, run in your terminal: "python3 -m pip install requests" (or "python3 -m pip install --user requests" if you don't have admin rights on your machine). Alternatively, on Windows and Mac, you can install the Anaconda package (download the python 3.6 installer from https://www.continuum.io/downloads) which will provide both python3 and the requests module.
+This script requires python3 and the requests module to work. To install this module on Linux, run in your terminal: "python3 -m pip install requests" (or "python3 -m pip install --user requests" if you don't have admin rights on your machine).
 
 This script requires python 3.4 (or higher) to run due to some novel features in the argparse and asyncio modules (https://docs.python.org/3/whatsnew/3.4.html)
 
@@ -15,16 +13,19 @@ The graphical interface requires the tkinter module (https://docs.python.org/3/l
 
 To download the script, click on the green button "Clone or download" on the top of this page and then click on "Download ZIP".
 
-Current version was updated on February 2nd 2018.
+Current version was updated on February 17th 2018.
 
-Examples
-========
 
-Use Graphical interface:
+How to use
+==========
+
+With graphical user interface:
 
 ```
 python3 gui.py
 ```
+
+Command line examples:
 
 Download four generations of ancestors for the main individual in your tree and output gedcom on stdout (will prompt for username and password):
 

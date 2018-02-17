@@ -5,7 +5,6 @@ from tkinter import Tk, Frame, Label, Entry, StringVar, Button, IntVar, Checkbut
 from getmyancestors import Session, Tree
 import asyncio
 import re
-import sys
 
 
 class SignIn(Frame):
@@ -22,6 +21,13 @@ class SignIn(Frame):
         entry_username.pack()
         label_password.pack()
         entry_password.pack()
+        entry_username.focus_set()
+        entry_username.bind('<Key>', self.enter)
+        entry_password.bind('<Key>', self.enter)
+
+    def enter(self, evt):
+        if evt.keysym == 'Return':
+            self.master.master.login()
 
 
 class StartIndi(Frame):
@@ -32,9 +38,29 @@ class StartIndi(Frame):
         self.fid = StringVar()
         self.btn_delete = Button(self, text='delete', command=self.delete)
         entry_fid = Entry(self, textvariable=self.fid, width=10)
+        entry_fid.bind('<FocusOut>', self.get_data)
         self.label_fid.pack()
         entry_fid.pack()
         self.btn_delete.pack()
+
+    def get_data(self, evt):
+        if re.match(r'[A-Z0-9]{4}-[A-Z0-9]{3}', self.fid.get()):
+            try:
+                fs = self.master.master.master.master.fs
+                data = fs.get_url('/platform/tree/persons/%s.json' % self.fid.get())
+                self.add_data(data)
+            except AttributeError:
+                pass
+
+    def add_data(self, data):
+        if data and 'persons' in data:
+            indi = data['persons'][0]
+            self.fid.set(indi['id'])
+            if 'names' in data['persons'][0]:
+                for name in data['persons'][0]['names']:
+                    if name['preferred']:
+                        self.label_fid.config(text=name['nameForms'][0]['fullText'])
+                        break
 
     def delete(self):
         self.master.master.start_indis.remove(self)
@@ -52,7 +78,6 @@ class Options(Frame):
         self.contributors = IntVar()
         self.start_indis = list()
         self.indis = Frame(self)
-        self.filename = None
         label_ancestors = Label(self, text='Number of generations to ascend')
         entry_ancestors = Entry(self, textvariable=self.ancestors, width=3)
         label_descendants = Label(self, text='Number of generations to descend')
@@ -61,7 +86,6 @@ class Options(Frame):
         btn_spouses = Checkbutton(self, text='Add spouses and couples information', variable=self.spouses)
         btn_ordinances = Checkbutton(self, text='Add temple information', variable=self.ordinances)
         btn_contributors = Checkbutton(self, text='Add list of contributors in notes', variable=self.contributors)
-        askfilename = Button(self, text='Save as', command=self.askfilename)
         label_ancestors.pack()
         entry_ancestors.pack()
         label_descendants.pack()
@@ -72,22 +96,12 @@ class Options(Frame):
         if ordinances:
             btn_ordinances.pack()
         btn_contributors.pack()
-        askfilename.pack()
-
-    def askfilename(self):
-        self.filename = filedialog.asksaveasfilename(title='Save as', filetypes=(('GEDCOM files', '.ged'), ('All files', '*.*')))
+        entry_ancestors.focus_set()
 
     def add_indi(self, data=None):
         new_indi = StartIndi(self.indis)
         self.start_indis.append(new_indi)
-        if data and 'persons' in data:
-            indi = data['persons'][0]
-            new_indi.fid.set(indi['id'])
-            if 'names' in data['persons'][0]:
-                for name in data['persons'][0]['names']:
-                    if name['preferred']:
-                        new_indi.label_fid.config(text=name['nameForms'][0]['fullText'])
-                        break
+        new_indi.add_data(data)
         new_indi.pack()
 
 
@@ -96,8 +110,9 @@ class Gui(Frame):
         super(Gui, self).__init__(window, borderwidth=10, **kwargs)
         self.fs = None
         self.tree = None
+        self.filename = None
         self.logfile = open('gui.log', 'w')
-        self.info = Label(self)
+        self.info_label = Label(self)
         self.form = Frame(self)
         self.sign_in = SignIn(self.form)
         self.options = Options(self.form, True)
@@ -110,27 +125,37 @@ class Gui(Frame):
         self.form.pack()
         self.btn_quit.pack(side='left')
         self.btn_valid.pack(side='right')
-        self.info.pack()
+        self.info_label.pack()
         buttons.pack()
         self.pack()
 
+    def info(self, text):
+        self.info_label.config(text=text)
+        self.master.update()
+
+    def save(self):
+        self.filename = filedialog.asksaveasfilename(title='Save as', filetypes=(('GEDCOM files', '.ged'), ('All files', '*.*')))
+        if not self.filename:
+            return
+        with open(self.filename, 'w') as file:
+            self.tree.print(file)
+
     def login(self):
         self.btn_valid.config(state='disabled')
-        self.info.config(text='Login to FamilySearch...')
-        self.master.update()
+        self.info('Login to FamilySearch...')
         self.fs = Session(self.sign_in.username.get(), self.sign_in.password.get(), verbose=True, logfile=self.logfile, timeout=1)
         if not self.fs.logged:
             messagebox.showinfo(message='The username or password was incorrect')
             self.btn_valid.config(state='normal')
+            self.info('')
             return
         self.tree = Tree(self.fs)
         data = self.fs.get_url('/platform/tree/persons/%s.json' % self.fs.get_userid())
         self.options.add_indi(data)
         self.sign_in.destroy()
         self.title.config(text='Options')
-        self.btn_valid.config(text='Download gedcom file')
-        self.btn_valid['command'] = self.download
-        self.btn_valid.config(state='normal')
+        self.btn_valid.config(command=self.download, state='normal', text='Download')
+        self.info('')
         self.options.pack()
 
     def download(self):
@@ -139,13 +164,10 @@ class Gui(Frame):
             if not re.match(r'[A-Z0-9]{4}-[A-Z0-9]{3}', fid):
                 messagebox.showinfo(message='Invalid FamilySearch ID: ' + fid)
                 return
-        if not self.options.filename:
-            messagebox.showinfo(message='Please choose a path')
-            return
+        self.options.destroy()
         _ = self.fs._
         self.btn_valid.config(state='disabled')
-        self.info.config(text=_('Download starting individuals...'))
-        self.master.update()
+        self.info(_('Download starting individuals...'))
         self.tree.add_indis(todo)
         todo = set(todo)
         done = set()
@@ -153,8 +175,7 @@ class Gui(Frame):
             if not todo:
                 break
             done |= todo
-            self.info.config(text=(_('Download ') + str(i + 1) + _('th generation of ancestors...')))
-            self.master.update()
+            self.info(_('Download ') + str(i + 1) + _('th generation of ancestors...'))
             todo = self.tree.add_parents(todo) - done
 
         todo = set(self.tree.indi.keys())
@@ -163,13 +184,11 @@ class Gui(Frame):
             if not todo:
                 break
             done |= todo
-            self.info.config(text=(_('Download ') + str(i + 1) + _('th generation of descendants...')))
-            self.master.update()
+            self.info(_('Download ') + str(i + 1) + _('th generation of descendants...'))
             todo = self.tree.add_children(todo) - done
 
         if self.options.spouses.get():
-            self.info.config(text=_('Download spouses and marriage information...'))
-            self.master.update()
+            self.info('Download spouses and marriage information...')
             todo = set(self.tree.indi.keys())
             self.tree.add_spouses(todo)
         ordi = self.options.ordinances.get()
@@ -191,19 +210,14 @@ class Gui(Frame):
                 await future
 
         loop = asyncio.get_event_loop()
-        self.info.config(text=(_('Download notes') + (((',' if cont else _(' and')) + _(' ordinances')) if ordi else '') + (_(' and contributors') if cont else '') + '...'))
-        self.master.update()
+        self.info(_('Download notes') + (((',' if cont else _(' and')) + _(' ordinances')) if ordi else '') + (_(' and contributors') if cont else '') + '...')
         loop.run_until_complete(download_stuff(loop))
 
         self.tree.reset_num()
-        file = open(self.options.filename, 'w')
-        self.tree.print(file)
-        file.close()
-        self.options.filename = None
-        self.info.config(text='Success')
+        self.btn_valid.config(command=self.save, state='normal', text='Save')
+        self.info(text='Success')
 
 
 window = Tk()
 sign_in = Gui(window)
-
 sign_in.mainloop()
