@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from tkinter import Tk, Frame, Label, Entry, StringVar, Button, IntVar, Checkbutton, filedialog
-import asyncio
+from tkinter import Tk, Frame, Label, Entry, StringVar, Button, IntVar, Checkbutton, filedialog, messagebox
 from getmyancestors import Session, Tree
-
-
-class LogVar(StringVar):
-
-    def write(self, text):
-        self.set(self.get() + text)
+import asyncio
+import re
+import sys
 
 
 class SignIn(Frame):
@@ -90,7 +86,7 @@ class Options(Frame):
             if 'names' in data['persons'][0]:
                 for name in data['persons'][0]['names']:
                     if name['preferred']:
-                        new_indi.label_fid['text'] = name['nameForms'][0]['fullText']
+                        new_indi.label_fid.config(text=name['nameForms'][0]['fullText'])
                         break
         new_indi.pack()
 
@@ -100,39 +96,56 @@ class Gui(Frame):
         super(Gui, self).__init__(window, borderwidth=10, **kwargs)
         self.fs = None
         self.tree = None
-        self.logfile = LogVar()
+        self.logfile = open('gui.log', 'w')
+        self.info = Label(self)
         self.form = Frame(self)
         self.sign_in = SignIn(self.form)
         self.options = Options(self.form, True)
         self.title = Label(self, text='Sign In to FamilySearch')
-        self.btn_quit = Button(self, text='Quit', command=self.quit)
-        self.btn_valid = Button(self, text='Sign In', fg='red', command=self.login)
+        buttons = Frame(self)
+        self.btn_quit = Button(buttons, text='Quit', command=self.quit)
+        self.btn_valid = Button(buttons, text='Sign In', fg='red', command=self.login)
         self.title.pack()
         self.sign_in.pack()
         self.form.pack()
         self.btn_quit.pack(side='left')
         self.btn_valid.pack(side='right')
+        self.info.pack()
+        buttons.pack()
         self.pack()
 
     def login(self):
-        self.fs = Session(self.sign_in.username.get(), self.sign_in.password.get(), verbose=True, timeout=1)
+        self.btn_valid.config(state='disabled')
+        self.info.config(text='Login to FamilySearch...')
+        self.master.update()
+        self.fs = Session(self.sign_in.username.get(), self.sign_in.password.get(), verbose=True, logfile=self.logfile, timeout=1)
         if not self.fs.logged:
-            self.logfile.write('Connection failed')
+            messagebox.showinfo(message='The username or password was incorrect')
+            self.btn_valid.config(state='normal')
             return
         self.tree = Tree(self.fs)
         data = self.fs.get_url('/platform/tree/persons/%s.json' % self.fs.get_userid())
         self.options.add_indi(data)
         self.sign_in.destroy()
-        self.title['text'] = 'Options'
-        self.btn_valid['text'] = 'Download gedcom file'
+        self.title.config(text='Options')
+        self.btn_valid.config(text='Download gedcom file')
         self.btn_valid['command'] = self.download
+        self.btn_valid.config(state='normal')
         self.options.pack()
 
     def download(self):
-        if not self.options.filename:
-            print('Please choose a path')
-            return
         todo = [start_indi.fid.get() for start_indi in self.options.start_indis]
+        for fid in todo:
+            if not re.match(r'[A-Z0-9]{4}-[A-Z0-9]{3}', fid):
+                messagebox.showinfo(message='Invalid FamilySearch ID: ' + fid)
+                return
+        if not self.options.filename:
+            messagebox.showinfo(message='Please choose a path')
+            return
+        _ = self.fs._
+        self.btn_valid.config(state='disabled')
+        self.info.config(text=_('Download starting individuals...'))
+        self.master.update()
         self.tree.add_indis(todo)
         todo = set(todo)
         done = set()
@@ -140,6 +153,8 @@ class Gui(Frame):
             if not todo:
                 break
             done |= todo
+            self.info.config(text=(_('Download ') + str(i + 1) + _('th generation of ancestors...')))
+            self.master.update()
             todo = self.tree.add_parents(todo) - done
 
         todo = set(self.tree.indi.keys())
@@ -148,28 +163,36 @@ class Gui(Frame):
             if not todo:
                 break
             done |= todo
+            self.info.config(text=(_('Download ') + str(i + 1) + _('th generation of descendants...')))
+            self.master.update()
             todo = self.tree.add_children(todo) - done
 
         if self.options.spouses.get():
+            self.info.config(text=_('Download spouses and marriage information...'))
+            self.master.update()
             todo = set(self.tree.indi.keys())
             self.tree.add_spouses(todo)
+        ordi = self.options.ordinances.get()
+        cont = self.options.contributors.get()
 
         async def download_stuff(loop):
             futures = set()
             for fid, indi in self.tree.indi.items():
                 futures.add(loop.run_in_executor(None, indi.get_notes))
-                if self.options.ordinances.get():
+                if ordi:
                     futures.add(loop.run_in_executor(None, self.tree.add_ordinances, fid))
-                if self.options.contributors.get():
+                if cont:
                     futures.add(loop.run_in_executor(None, indi.get_contributors))
             for fam in self.tree.fam.values():
                 futures.add(loop.run_in_executor(None, fam.get_notes))
-                if self.options.contributors.get():
+                if cont:
                     futures.add(loop.run_in_executor(None, fam.get_contributors))
             for future in futures:
                 await future
 
         loop = asyncio.get_event_loop()
+        self.info.config(text=(_('Download notes') + (((',' if cont else _(' and')) + _(' ordinances')) if ordi else '') + (_(' and contributors') if cont else '') + '...'))
+        self.master.update()
         loop.run_until_complete(download_stuff(loop))
 
         self.tree.reset_num()
@@ -177,6 +200,7 @@ class Gui(Frame):
         self.tree.print(file)
         file.close()
         self.options.filename = None
+        self.info.config(text='Success')
 
 
 window = Tk()
