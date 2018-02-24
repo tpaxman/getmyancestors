@@ -4,6 +4,8 @@
 from tkinter import Tk, StringVar, IntVar, filedialog, messagebox, Menu, TclError
 from tkinter.ttk import Frame, Label, Entry, Button, Checkbutton, Treeview
 from getmyancestors import Session, Tree
+from threading import Thread
+from time import sleep
 import asyncio
 import re
 
@@ -12,9 +14,9 @@ import re
 class EntryWithMenu(Entry):
     def __init__(self, master, **kw):
         super(EntryWithMenu, self).__init__(master, **kw)
-        self.bind('<Button-3>', self.clic_right)
+        self.bind('<Button-3>', self.click_right)
 
-    def clic_right(self, event):
+    def click_right(self, event):
         menu = Menu(self, tearoff=0)
         try:
             self.selection_get()
@@ -43,10 +45,11 @@ class EntryWithMenu(Entry):
             pass
 
 
+# Sign In widget
 class SignIn(Frame):
 
-    def __init__(self, window, **kwargs):
-        super(SignIn, self).__init__(window, **kwargs)
+    def __init__(self, master, **kwargs):
+        super(SignIn, self).__init__(master, **kwargs)
         self.username = StringVar()
         self.password = StringVar()
         label_username = Label(self, text='Username:')
@@ -63,13 +66,13 @@ class SignIn(Frame):
 
     def enter(self, evt):
         if evt.keysym == 'Return':
-            self.master.master.login()
+            self.master.master.command_in_thread(self.master.master.login)()
 
 
+# List of starting individuals
 class StartIndis(Treeview):
-    def __init__(self, window, **kwargs):
-        super(StartIndis, self).__init__(window, selectmode='extended', columns=('fid'), **kwargs)
-        # self['columns'] = ('fid')
+    def __init__(self, master, **kwargs):
+        super(StartIndis, self).__init__(master, selectmode='extended', columns=('fid'), **kwargs)
         self.column('fid', width=80)
         self.indis = dict()
         self.heading('fid', text='Id')
@@ -111,9 +114,10 @@ class StartIndis(Treeview):
         return delete
 
 
+# Options form
 class Options(Frame):
-    def __init__(self, window, ordinances=False, **kwargs):
-        super(Options, self).__init__(window, **kwargs)
+    def __init__(self, master, ordinances=False, **kwargs):
+        super(Options, self).__init__(master, **kwargs)
         self.ancestors = IntVar()
         self.ancestors.set(4)
         self.descendants = IntVar()
@@ -156,9 +160,10 @@ class Options(Frame):
             self.add_indi()
 
 
+# Main widget
 class Gui(Frame):
-    def __init__(self, window, **kwargs):
-        super(Gui, self).__init__(window, borderwidth=20, **kwargs)
+    def __init__(self, master, **kwargs):
+        super(Gui, self).__init__(master, borderwidth=20, **kwargs)
         self.fs = None
         self.tree = None
         self.logfile = open('gui.log', 'w')
@@ -169,8 +174,8 @@ class Gui(Frame):
         self.options = Options(self.form, True)
         self.title = Label(self, text='Sign In to FamilySearch', font='a 12 bold')
         buttons = Frame(self)
-        self.btn_quit = Button(buttons, text='Quit', command=self.quit)
-        self.btn_valid = Button(buttons, text='Sign In', command=self.login)
+        self.btn_quit = Button(buttons, text='Quit', command=Thread(target=self.quit).start)
+        self.btn_valid = Button(buttons, text='Sign In', command=self.command_in_thread(self.login))
         self.title.pack()
         self.sign_in.pack()
         self.form.pack()
@@ -180,10 +185,10 @@ class Gui(Frame):
         info.pack()
         buttons.pack()
         self.pack()
+        self.update_needed = False
 
     def info(self, text):
         self.info_label.config(text=text)
-        self.master.update()
 
     def save(self):
         filename = filedialog.asksaveasfilename(title='Save as', defaultextension='.ged', filetypes=(('GEDCOM files', '.ged'), ('All files', '*.*')))
@@ -202,13 +207,17 @@ class Gui(Frame):
             self.info('')
             return
         self.tree = Tree(self.fs)
-        # data = self.fs.get_url('/platform/tree/persons/%s.json' % self.fs.get_userid())
         self.sign_in.destroy()
         self.title.config(text='Options')
-        self.btn_valid.config(command=self.download, state='normal', text='Download')
+        self.btn_valid.config(command=self.command_in_thread(self.download), state='normal', text='Download')
         self.options.pack()
         self.info('')
         self.options.start_indis.add_indi(self.fs.get_userid())
+        self.update_needed = False
+
+    def quit(self):
+        self.update_needed = False
+        return super(Gui, self).quit()
 
     def download(self):
         todo = [self.options.start_indis.indis[key] for key in sorted(self.options.start_indis.indis)]
@@ -218,6 +227,7 @@ class Gui(Frame):
                 return
         self.options.destroy()
         self.form.destroy()
+        self.title.config(text='Getmyancestors')
         _ = self.fs._
         self.btn_valid.config(state='disabled')
         self.info(_('Download starting individuals...'))
@@ -241,7 +251,7 @@ class Gui(Frame):
             todo = self.tree.add_children(todo) - done
 
         if self.options.spouses.get():
-            self.info('Download spouses and marriage information...')
+            self.info(_('Download spouses and marriage information...'))
             todo = set(self.tree.indi.keys())
             self.tree.add_spouses(todo)
         ordi = self.options.ordinances.get()
@@ -268,10 +278,24 @@ class Gui(Frame):
 
         self.tree.reset_num()
         self.btn_valid.config(command=self.save, state='normal', text='Save')
-        self.info(text='Success. Clic "Save" to save your GEDCOM file.')
+        self.info(text='Success. Click "Save" to save your GEDCOM file.')
+        self.update_needed = False
+
+    def command_in_thread(self, func):
+        def res():
+            self.update_needed = True
+            Thread(target=self.update_gui).start()
+            Thread(target=func).start()
+        return res
+
+    def update_gui(self):
+        while self.update_needed:
+            self.master.update()
+            sleep(0.1)
 
 
-window = Tk()
-window.title('Getmyancestors')
-sign_in = Gui(window)
-sign_in.mainloop()
+if __name__ == '__main__':
+    root = Tk()
+    root.title('Getmyancestors')
+    sign_in = Gui(root)
+    sign_in.mainloop()

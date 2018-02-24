@@ -758,7 +758,9 @@ class Tree:
                 await future
 
         new_fids = [fid for fid in fids if fid and fid not in self.indi]
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        # loop = asyncio.get_event_loop()
         while len(new_fids):
             data = self.fs.get_url('/platform/tree/persons.json?pids=' + ','.join(new_fids[:MAX_PERSONS]))
             if data:
