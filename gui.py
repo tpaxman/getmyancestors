@@ -81,7 +81,7 @@ class SignIn(Frame):
         entry_password.bind('<Key>', self.enter)
 
     def enter(self, evt):
-        if evt.keysym == 'Return':
+        if evt.keysym in {'Return', 'KP_Enter'}:
             self.master.master.command_in_thread(self.master.master.login)()
 
 
@@ -169,7 +169,7 @@ class Options(Frame):
             self.fid.set('')
 
     def enter(self, evt):
-        if evt.keysym == 'Return':
+        if evt.keysym in {'Return', 'KP_Enter'}:
             self.add_indi()
 
 
