@@ -128,5 +128,82 @@ translations = {
     'Download ': {
         'fr': 'Téléchargement de la ',
     },
-
+    'Copy': {
+        'fr': 'Copier',
+    },
+    'Cut': {
+        'fr': 'Couper',
+    },
+    'Paste': {
+        'fr': 'Coller',
+    },
+    'Username:': {
+        'fr': "Nom d'utilisateur :",
+    },
+    'Password:': {
+        'fr': 'Mot de passe :',
+    },
+    'ID already exist': {
+        'fr': 'Cet identifiant existe déjà',
+    },
+    'Invalid FamilySearch ID: ': {
+        'fr': 'Identifiant FamilySearch invalide : ',
+    },
+    'Individual not found': {
+        'fr': 'Personne non trouvée',
+    },
+    'Remove': {
+        'fr': 'Supprimer',
+    },
+    'Number of generations to ascend': {
+        'fr': "Nombre de générations d'ancêtres",
+    },
+    'Number of generations to descend': {
+        'fr': 'Nombre de générations de descendants',
+    },
+    'Add a Familysearch ID': {
+        'fr': 'Ajouter un identifiant FamilySearch',
+    },
+    'Add spouses and couples information': {
+        'fr': 'Ajouter les conjoints et les informations de mariage',
+    },
+    'Add Temple information': {
+        'fr': 'Ajouter les informations du Temple',
+    },
+    'Add list of contributors in notes': {
+        'fr': 'Ajouter une liste des contributeurs dans les notes',
+    },
+    'Sign In to FamilySearch': {
+        'fr': 'Ouvrir une session Familysearch',
+    },
+    'Sign In': {
+        'fr': 'Ouvrir une session',
+    },
+    'Quit': {
+        'fr': 'Quitter',
+    },
+    'Save as': {
+        'fr': 'Enregistrer sous',
+    },
+    'All files': {
+        'fr': 'Tous les fichiers',
+    },
+    'Login to FamilySearch...': {
+        'fr': 'Connection à FamilySearch...',
+    },
+    'The username or password was incorrect': {
+        'fr': "Le nom d'utilisateur ou le mot de passe est incorrect",
+    },
+    'Options': {
+        'fr': 'Options',
+    },
+    'Download': {
+        'fr': 'Télécharger',
+    },
+    'Save': {
+        'fr': 'Sauvegarder',
+    },
+    'Click below to save your GEDCOM file': {
+        'fr': 'Cliquez ci-dessous pour sauvegarder votre fichier GEDCOM',
+    },
 }

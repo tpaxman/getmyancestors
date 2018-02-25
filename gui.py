@@ -4,10 +4,26 @@
 from tkinter import Tk, StringVar, IntVar, filedialog, messagebox, Menu, TclError
 from tkinter.ttk import Frame, Label, Entry, Button, Checkbutton, Treeview
 from getmyancestors import Session, Tree
+from translation import translations
 from threading import Thread
-from time import sleep
+from diskcache import Cache
+import time
+import tempfile
 import asyncio
 import re
+import os
+
+
+tmp_dir = os.path.join(tempfile.gettempdir(), 'getmyancestors')
+global cache
+cache = Cache(tmp_dir)
+lang = cache.get('lang')
+
+
+def _(string):
+    if string in translations and lang in translations[string]:
+        return translations[string][lang]
+    return string
 
 
 # Entry widget with right-clic menu to copy/cut/paste
@@ -23,9 +39,9 @@ class EntryWithMenu(Entry):
             state = 'normal'
         except TclError:
             state = 'disabled'
-        menu.add_command(label='Copy', command=self.copy, state=state)
-        menu.add_command(label='Cut', command=self.cut, state=state)
-        menu.add_command(label='Paste', command=self.paste)
+        menu.add_command(label=_('Copy'), command=self.copy, state=state)
+        menu.add_command(label=_('Cut'), command=self.cut, state=state)
+        menu.add_command(label=_('Paste'), command=self.paste)
         menu.post(event.x_root, event.y_root)
 
     def copy(self):
@@ -52,9 +68,9 @@ class SignIn(Frame):
         super(SignIn, self).__init__(master, **kwargs)
         self.username = StringVar()
         self.password = StringVar()
-        label_username = Label(self, text='Username:')
+        label_username = Label(self, text=_('Username:'))
         entry_username = EntryWithMenu(self, textvariable=self.username, width=30)
-        label_password = Label(self, text='Password:')
+        label_password = Label(self, text=_('Password:'))
         entry_password = EntryWithMenu(self, show='●', textvariable=self.password, width=30)
         label_username.grid(row=0, column=0, pady=15, padx=(0, 5))
         entry_username.grid(row=0, column=1)
@@ -82,29 +98,26 @@ class StartIndis(Treeview):
         if not fid:
             return
         if fid in self.indis.values():
-            messagebox.showinfo(message='ID already exist')
+            messagebox.showinfo(message=_('ID already exist'))
             return
         if not re.match(r'[A-Z0-9]{4}-[A-Z0-9]{3}', fid):
-            messagebox.showinfo(message='Invalid FamilySearch ID: ' + fid)
+            messagebox.showinfo(message=_('Invalid FamilySearch ID: ') + fid)
             return
-        try:
-            fs = self.master.master.master.fs
-            data = fs.get_url('/platform/tree/persons/%s.json' % fid)
-            if data and 'persons' in data:
-                if 'names' in data['persons'][0]:
-                    for name in data['persons'][0]['names']:
-                        if name['preferred']:
-                            self.indis[self.insert('', 0, text=name['nameForms'][0]['fullText'], values=fid)] = fid
-                            return True
-            messagebox.showinfo(message='Individual not found')
-        except AttributeError:
-            messagebox.showinfo(message='Fatal error: FamilySearch session not found')
+        fs = self.master.master.master.fs
+        data = fs.get_url('/platform/tree/persons/%s.json' % fid)
+        if data and 'persons' in data:
+            if 'names' in data['persons'][0]:
+                for name in data['persons'][0]['names']:
+                    if name['preferred']:
+                        self.indis[self.insert('', 0, text=name['nameForms'][0]['fullText'], values=fid)] = fid
+                        return True
+        messagebox.showinfo(message=_('Individual not found'))
 
     def popup(self, event):
         item = self.identify_row(event.y)
         if item:
             menu = Menu(self, tearoff=0)
-            menu.add_command(label='Remove', command=self.delete_item(item))
+            menu.add_command(label=_('Remove'), command=self.delete_item(item))
             menu.post(event.x_root, event.y_root)
 
     def delete_item(self, item):
@@ -129,14 +142,14 @@ class Options(Frame):
         btn = Frame(self)
         entry_fid = EntryWithMenu(btn, textvariable=self.fid, width=16)
         entry_fid.bind('<Key>', self.enter)
-        label_ancestors = Label(self, text='Number of generations to ascend')
+        label_ancestors = Label(self, text=_('Number of generations to ascend'))
         entry_ancestors = EntryWithMenu(self, textvariable=self.ancestors, width=5)
-        label_descendants = Label(self, text='Number of generations to descend')
+        label_descendants = Label(self, text=_('Number of generations to descend'))
         entry_descendants = EntryWithMenu(self, textvariable=self.descendants, width=5)
-        btn_add_indi = Button(btn, text='Add a Familysearch ID', command=self.add_indi)
-        btn_spouses = Checkbutton(self, text='          Add spouses and couples information', variable=self.spouses)
-        btn_ordinances = Checkbutton(self, text='          Add temple information', variable=self.ordinances)
-        btn_contributors = Checkbutton(self, text='          Add list of contributors in notes', variable=self.contributors)
+        btn_add_indi = Button(btn, text=_('Add a Familysearch ID'), command=self.add_indi)
+        btn_spouses = Checkbutton(self, text='\t' + _('Add spouses and couples information'), variable=self.spouses)
+        btn_ordinances = Checkbutton(self, text='\t' + _('Add Temple information'), variable=self.ordinances)
+        btn_contributors = Checkbutton(self, text='\t' + _('Add list of contributors in notes'), variable=self.contributors)
         self.start_indis.grid(row=0, sticky='ew', column=0, columnspan=3)
         entry_fid.grid(row=0, column=0, sticky='e')
         btn_add_indi.grid(row=0, column=1, sticky='w')
@@ -168,14 +181,14 @@ class Gui(Frame):
         self.tree = None
         self.logfile = open('gui.log', 'w')
         info = Frame(self, borderwidth=10)
-        self.info_label = Label(info, borderwidth=20)
+        self.info_label = Label(info, borderwidth=20, justify='center')
         self.form = Frame(self)
         self.sign_in = SignIn(self.form)
-        self.options = Options(self.form, True)
-        self.title = Label(self, text='Sign In to FamilySearch', font='a 12 bold')
+        self.options = None
+        self.title = Label(self, text=_('Sign In to FamilySearch'), font='a 12 bold')
         buttons = Frame(self)
-        self.btn_quit = Button(buttons, text='Quit', command=Thread(target=self.quit).start)
-        self.btn_valid = Button(buttons, text='Sign In', command=self.command_in_thread(self.login))
+        self.btn_quit = Button(buttons, text=_('Quit'), command=Thread(target=self.quit).start)
+        self.btn_valid = Button(buttons, text=_('Sign In'), command=self.command_in_thread(self.login))
         self.title.pack()
         self.sign_in.pack()
         self.form.pack()
@@ -191,28 +204,33 @@ class Gui(Frame):
         self.info_label.config(text=text)
 
     def save(self):
-        filename = filedialog.asksaveasfilename(title='Save as', defaultextension='.ged', filetypes=(('GEDCOM files', '.ged'), ('All files', '*.*')))
+        filename = filedialog.asksaveasfilename(title=_('Save as'), defaultextension='.ged', filetypes=(('GEDCOM', '.ged'), (_('All files'), '*.*')))
         if not filename:
             return
-        with open(filename, 'w') as file:
+        with open(filename, 'w', encoding='utf-8') as file:
             self.tree.print(file)
 
     def login(self):
+        global _
         self.btn_valid.config(state='disabled')
-        self.info('Login to FamilySearch...')
+        self.info(_('Login to FamilySearch...'))
         self.fs = Session(self.sign_in.username.get(), self.sign_in.password.get(), verbose=True, logfile=self.logfile, timeout=1)
         if not self.fs.logged:
-            messagebox.showinfo(message='The username or password was incorrect')
+            messagebox.showinfo(message=_('The username or password was incorrect'))
             self.btn_valid.config(state='normal')
             self.info('')
             return
         self.tree = Tree(self.fs)
-        self.sign_in.destroy()
-        self.title.config(text='Options')
-        self.btn_valid.config(command=self.command_in_thread(self.download), state='normal', text='Download')
-        self.options.pack()
+        _ = self.fs._
+        self.title.config(text=_('Options'))
+        cache.delete('lang')
+        cache.add('lang', self.fs.lang)
+        self.options = Options(self.form, True)
         self.info('')
+        self.sign_in.destroy()
+        self.options.pack()
         self.options.start_indis.add_indi(self.fs.get_userid())
+        self.btn_valid.config(command=self.command_in_thread(self.download), state='normal', text=_('Download'))
         self.update_needed = False
 
     def quit(self):
@@ -223,12 +241,12 @@ class Gui(Frame):
         todo = [self.options.start_indis.indis[key] for key in sorted(self.options.start_indis.indis)]
         for fid in todo:
             if not re.match(r'[A-Z0-9]{4}-[A-Z0-9]{3}', fid):
-                messagebox.showinfo(message='Invalid FamilySearch ID: ' + fid)
+                messagebox.showinfo(message=_('Invalid FamilySearch ID: ') + fid)
                 return
+        time_count = time.time()
         self.options.destroy()
         self.form.destroy()
         self.title.config(text='Getmyancestors')
-        _ = self.fs._
         self.btn_valid.config(state='disabled')
         self.info(_('Download starting individuals...'))
         self.tree.add_indis(todo)
@@ -277,8 +295,11 @@ class Gui(Frame):
         loop.run_until_complete(download_stuff(loop))
 
         self.tree.reset_num()
-        self.btn_valid.config(command=self.save, state='normal', text='Save')
-        self.info(text='Success. Click "Save" to save your GEDCOM file.')
+        self.btn_valid.config(command=self.save, state='normal', text=_('Save'))
+        self.info(
+            text=_('Downloaded %s individuals, %s families, %s sources and %s notes in %s seconds with %s HTTP requests.') %
+            (str(len(self.tree.indi)), str(len(self.tree.fam)), str(len(self.tree.sources)), str(len(self.tree.notes)), str(round(time.time() - time_count)), str(self.fs.counter)) +
+            '\n' + _('Click below to save your GEDCOM file'))
         self.update_needed = False
 
     def command_in_thread(self, func):
@@ -291,7 +312,7 @@ class Gui(Frame):
     def update_gui(self):
         while self.update_needed:
             self.master.update()
-            sleep(0.1)
+            time.sleep(0.1)
 
 
 if __name__ == '__main__':
