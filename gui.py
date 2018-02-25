@@ -229,8 +229,9 @@ class Gui(Frame):
         self.info('')
         self.sign_in.destroy()
         self.options.pack()
-        self.options.start_indis.add_indi(self.fs.get_userid())
+        self.btn_quit.config(text=_('Quit'))
         self.btn_valid.config(command=self.command_in_thread(self.download), state='normal', text=_('Download'))
+        self.options.start_indis.add_indi(self.fs.get_userid())
         self.update_needed = False
 
     def quit(self):
