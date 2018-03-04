@@ -12,13 +12,13 @@ import asyncio
 import re
 import os
 
-# global import
+# local import
 from getmyancestors import Session, Tree, Indi, Fam
 from mergemyancestors import Gedcom
 from translation import translations
 
 
-tmp_dir = os.path.join(tempfile.gettempdir(), 'familysearchtogedcom')
+tmp_dir = os.path.join(tempfile.gettempdir(), 'fstogedcom')
 global cache
 cache = Cache(tmp_dir)
 lang = cache.get('lang')
