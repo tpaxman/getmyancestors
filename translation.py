@@ -207,7 +207,7 @@ translations = {
         'fr': 'Cliquez ci-dessous pour sauvegarder votre fichier GEDCOM',
     },
     'Download GEDCOM': {
-        'fr': 'Téléchager un GEDCOM',
+        'fr': 'Télécharger un GEDCOM',
     },
     'Merge GEDCOMs': {
         'fr': 'Fusionner des GEDCOM',
