@@ -99,7 +99,7 @@ class Merge(Frame):
     def __init__(self, master, **kwargs):
         super(Merge, self).__init__(master, **kwargs)
         self.files_to_merge = FilesToMerge(self, height=5)
-        self.btn_add_file = Button(self, text=_('Add a file'), command=self.add_files)
+        self.btn_add_file = Button(self, text=_('Add files'), command=self.add_files)
         self.files_to_merge.pack()
         self.btn_add_file.pack()
         buttons = Frame(self)
@@ -451,7 +451,7 @@ class Gui(Notebook):
         self.download.btn_quit.config(text=_('Quit'))
         self.merge.btn_quit.config(text=_('Quit'))
         self.merge.btn_save.config(text=('Merge'))
-        self.merge.btn_add_file.config(text=_('Add a file'))
+        self.merge.btn_add_file.config(text=_('Add files'))
 
 
 if __name__ == '__main__':

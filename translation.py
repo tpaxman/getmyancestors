@@ -206,4 +206,31 @@ translations = {
     'Click below to save your GEDCOM file': {
         'fr': 'Cliquez ci-dessous pour sauvegarder votre fichier GEDCOM',
     },
+    'Download GEDCOM': {
+        'fr': 'Téléchager un GEDCOM',
+    },
+    'Merge GEDCOMs': {
+        'fr': 'Fusionner des GEDCOM',
+    },
+    'Merge': {
+        'fr': 'Fusionner',
+    },
+    'Add files': {
+        'fr': 'Ajouter des fichiers',
+    },
+    'File already exist: ': {
+        'fr': 'Ce fichier existe déjà: ',
+    },
+    'Open': {
+        'fr': 'Ouvrir',
+    },
+    'File not found: ': {
+        'fr': 'Fichier non trouvé: ',
+    },
+    'Save': {
+        'fr': 'Sauvegarder',
+    },
+    'Save': {
+        'fr': 'Sauvegarder',
+    },
 }
