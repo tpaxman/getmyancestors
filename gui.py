@@ -356,6 +356,7 @@ class Download(Frame):
 
     def quit(self):
         self.update_needed = False
+        self.logfile.close()
         return super(Download, self).quit()
 
     def download(self):
