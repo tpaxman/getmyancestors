@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# global import
 from tkinter import Tk, StringVar, IntVar, filedialog, messagebox, Menu, TclError
 from tkinter.ttk import Frame, Label, Entry, Button, Checkbutton, Treeview, Notebook
-from getmyancestors import Session, Tree, Indi, Fam
-from mergemyancestors import Gedcom
-from translation import translations
 from threading import Thread
 from diskcache import Cache
 import time
@@ -13,6 +11,11 @@ import tempfile
 import asyncio
 import re
 import os
+
+# global import
+from getmyancestors import Session, Tree, Indi, Fam
+from mergemyancestors import Gedcom
+from translation import translations
 
 
 tmp_dir = os.path.join(tempfile.gettempdir(), 'familysearchtogedcom')
@@ -62,6 +65,7 @@ class EntryWithMenu(Entry):
             pass
 
 
+# List of files to merge
 class FilesToMerge(Treeview):
     def __init__(self, master, **kwargs):
         super(FilesToMerge, self).__init__(master, selectmode='extended', **kwargs)
@@ -96,6 +100,7 @@ class FilesToMerge(Treeview):
         return delete
 
 
+# Merge widget
 class Merge(Frame):
 
     def __init__(self, master, **kwargs):
