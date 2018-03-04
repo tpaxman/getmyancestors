@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 from tkinter import Tk, StringVar, IntVar, filedialog, messagebox, Menu, TclError
-from tkinter.ttk import Frame, Label, Entry, Button, Checkbutton, Treeview
-from getmyancestors import Session, Tree
+from tkinter.ttk import Frame, Label, Entry, Button, Checkbutton, Treeview, Notebook
+from getmyancestors import Session, Tree, Indi, Fam
+from mergemyancestors import Gedcom
 from translation import translations
 from threading import Thread
 from diskcache import Cache
@@ -59,6 +60,125 @@ class EntryWithMenu(Entry):
             self.insert('insert', text)
         except TclError:
             pass
+
+
+class FilesToMerge(Treeview):
+    def __init__(self, master, **kwargs):
+        super(FilesToMerge, self).__init__(master, selectmode='extended', **kwargs)
+        self.files = dict()
+        self.bind('<Button-3>', self.popup)
+
+    def add_file(self, filename):
+        if any(f.name == filename for f in self.files.values()):
+            messagebox.showinfo(message=_('File already exist: ') + os.path.basename(filename))
+            return
+        if not os.path.exists(filename):
+            messagebox.showinfo(message=_('File not found: ') + os.path.basename(filename))
+            return
+        file = open(filename, 'r', encoding='utf-8')
+        new_id = self.insert('', 0, text=os.path.basename(filename))
+        self.files[new_id] = file
+
+    def popup(self, event):
+        item = self.identify_row(event.y)
+        if item:
+            menu = Menu(self, tearoff=0)
+            menu.add_command(label=_('Remove'), command=self.delete_item(item))
+            menu.post(event.x_root, event.y_root)
+
+    def delete_item(self, item):
+        def delete():
+            self.files[item].close()
+            self.files.pop(item)
+            self.delete(item)
+        return delete
+
+
+class Merge(Frame):
+
+    def __init__(self, master, **kwargs):
+        super(Merge, self).__init__(master, **kwargs)
+        self.files_to_merge = FilesToMerge(self, height=5)
+        self.btn_add_file = Button(self, text=_('Add a file'), command=self.add_files)
+        self.files_to_merge.pack()
+        self.btn_add_file.pack()
+        buttons = Frame(self)
+        self.btn_quit = Button(buttons, text=_('Quit'), command=self.quit)
+        self.btn_save = Button(buttons, text=_('Merge'), command=self.save)
+        self.btn_quit.pack(side='left', padx=(0, 40))
+        self.btn_save.pack(side='right', padx=(40, 0))
+        buttons.pack()
+
+    def add_files(self):
+        for filename in filedialog.askopenfilenames(title=_('Open'), defaultextension='.ged', filetypes=(('GEDCOM', '.ged'), (_('All files'), '*.*'))):
+            self.files_to_merge.add_file(filename)
+
+    def save(self):
+        filename = filedialog.asksaveasfilename(title=_('Save as'), defaultextension='.ged', filetypes=(('GEDCOM', '.ged'), (_('All files'), '*.*')))
+        tree = Tree()
+
+        indi_counter = 0
+        fam_counter = 0
+
+        # read the GEDCOM data
+        for file in self.files_to_merge.files.values():
+            ged = Gedcom(file, tree)
+
+            # add informations about individuals
+            for num in ged.indi:
+                fid = ged.indi[num].fid
+                if fid not in tree.indi:
+                    indi_counter += 1
+                    tree.indi[fid] = Indi(tree=tree, num=indi_counter)
+                    tree.indi[fid].tree = tree
+                    tree.indi[fid].fid = ged.indi[num].fid
+                tree.indi[fid].fams_fid |= ged.indi[num].fams_fid
+                tree.indi[fid].famc_fid |= ged.indi[num].famc_fid
+                tree.indi[fid].name = ged.indi[num].name
+                tree.indi[fid].birthnames = ged.indi[num].birthnames
+                tree.indi[fid].nicknames = ged.indi[num].nicknames
+                tree.indi[fid].aka = ged.indi[num].aka
+                tree.indi[fid].married = ged.indi[num].married
+                tree.indi[fid].gender = ged.indi[num].gender
+                tree.indi[fid].facts = ged.indi[num].facts
+                tree.indi[fid].notes = ged.indi[num].notes
+                tree.indi[fid].sources = ged.indi[num].sources
+                tree.indi[fid].memories = ged.indi[num].memories
+                tree.indi[fid].baptism = ged.indi[num].baptism
+                tree.indi[fid].confirmation = ged.indi[num].confirmation
+                tree.indi[fid].endowment = ged.indi[num].endowment
+                if not (tree.indi[fid].sealing_child and tree.indi[fid].sealing_child.famc):
+                    tree.indi[fid].sealing_child = ged.indi[num].sealing_child
+
+            # add informations about families
+            for num in ged.fam:
+                husb, wife = (ged.fam[num].husb_fid, ged.fam[num].wife_fid)
+                if (husb, wife) not in tree.fam:
+                    fam_counter += 1
+                    tree.fam[(husb, wife)] = Fam(husb, wife, tree, fam_counter)
+                    tree.fam[(husb, wife)].tree = tree
+                tree.fam[(husb, wife)].chil_fid |= ged.fam[num].chil_fid
+                tree.fam[(husb, wife)].fid = ged.fam[num].fid
+                tree.fam[(husb, wife)].facts = ged.fam[num].facts
+                tree.fam[(husb, wife)].notes = ged.fam[num].notes
+                tree.fam[(husb, wife)].sources = ged.fam[num].sources
+                tree.fam[(husb, wife)].sealing_spouse = ged.fam[num].sealing_spouse
+
+        # merge notes by text
+        tree.notes = sorted(tree.notes, key=lambda x: x.text)
+        for i, n in enumerate(tree.notes):
+            if i == 0:
+                n.num = 1
+                continue
+            if n.text == tree.notes[i - 1].text:
+                n.num = tree.notes[i - 1].num
+            else:
+                n.num = tree.notes[i - 1].num + 1
+
+        # compute number for family relationships and print GEDCOM file
+        tree.reset_num()
+        with open(filename, 'w', encoding='utf-8') as file:
+            tree.print(file)
 
 
 # Sign In widget
@@ -174,9 +294,9 @@ class Options(Frame):
 
 
 # Main widget
-class Gui(Frame):
+class Download(Frame):
     def __init__(self, master, **kwargs):
-        super(Gui, self).__init__(master, borderwidth=20, **kwargs)
+        super(Download, self).__init__(master, borderwidth=20, **kwargs)
         self.fs = None
         self.tree = None
         self.logfile = open('gui.log', 'w')
@@ -229,14 +349,14 @@ class Gui(Frame):
         self.info('')
         self.sign_in.destroy()
         self.options.pack()
-        self.btn_quit.config(text=_('Quit'))
+        self.master.change_lang()
         self.btn_valid.config(command=self.command_in_thread(self.download), state='normal', text=_('Download'))
         self.options.start_indis.add_indi(self.fs.get_userid())
         self.update_needed = False
 
     def quit(self):
         self.update_needed = False
-        return super(Gui, self).quit()
+        return super(Download, self).quit()
 
     def download(self):
         todo = [self.options.start_indis.indis[key] for key in sorted(self.options.start_indis.indis)]
@@ -314,6 +434,24 @@ class Gui(Frame):
         while self.update_needed:
             self.master.update()
             time.sleep(0.1)
+
+
+class Gui(Notebook):
+    def __init__(self, master, **kwargs):
+        super(Gui, self).__init__(master, **kwargs)
+        self.download = Download(self)
+        self.merge = Merge(self)
+        self.add(self.download, text=_('Download GEDCOM'))
+        self.add(self.merge, text=_('Merge GEDCOMs'))
+        self.pack()
+
+    def change_lang(self):
+        self.tab(self.index(self.download), text=_('Download GEDCOM'))
+        self.tab(self.index(self.merge), text=_('Merge GEDCOMs'))
+        self.download.btn_quit.config(text=_('Quit'))
+        self.merge.btn_quit.config(text=_('Quit'))
+        self.merge.btn_save.config(text=('Merge'))
+        self.merge.btn_add_file.config(text=_('Add a file'))
 
 
 if __name__ == '__main__':
