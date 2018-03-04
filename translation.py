@@ -174,7 +174,7 @@ translations = {
         'fr': 'Ajouter une liste des contributeurs dans les notes',
     },
     'Sign In to FamilySearch': {
-        'fr': 'Ouvrir une session Familysearch',
+        'fr': 'Ouvrir une session FamilySearch',
     },
     'Sign In': {
         'fr': 'Ouvrir une session',

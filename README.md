@@ -13,7 +13,7 @@ The graphical interface requires the tkinter module (https://docs.python.org/3/l
 
 To download the script, click on the green button "Clone or download" on the top of this page and then click on "Download ZIP".
 
-Current version was updated on February 24th 2018.
+Current version was updated on March 4th 2018.
 
 
 How to use
@@ -22,7 +22,7 @@ How to use
 With graphical user interface:
 
 ```
-python3 gui.py
+python3 fstogedcom.py
 ```
 
 Command line examples:

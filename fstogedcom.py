@@ -15,7 +15,7 @@ import re
 import os
 
 
-tmp_dir = os.path.join(tempfile.gettempdir(), 'getmyancestors')
+tmp_dir = os.path.join(tempfile.gettempdir(), 'familysearchtogedcom')
 global cache
 cache = Cache(tmp_dir)
 lang = cache.get('lang')
@@ -111,7 +111,7 @@ class Merge(Frame):
         self.btn_add_file.pack()
         self.btn_quit.pack(side='left', padx=(0, 40))
         self.btn_save.pack(side='right', padx=(40, 0))
-        buttons.pack()
+        buttons.pack(side='bottom')
 
     def add_files(self):
         for filename in filedialog.askopenfilenames(title=_('Open'), defaultextension='.ged', filetypes=(('GEDCOM', '.ged'), (_('All files'), '*.*'))):
@@ -309,7 +309,7 @@ class Download(Frame):
         super(Download, self).__init__(master, borderwidth=20, **kwargs)
         self.fs = None
         self.tree = None
-        self.logfile = open('gui.log', 'w')
+        self.logfile = open('download.log', 'w')
         info = Frame(self, borderwidth=10)
         self.info_label = Label(info, borderwidth=20, justify='center')
         self.form = Frame(self)
@@ -326,7 +326,7 @@ class Download(Frame):
         self.btn_valid.pack(side='right', padx=(40, 0))
         self.info_label.pack()
         info.pack()
-        buttons.pack()
+        buttons.pack(side='bottom')
         self.pack()
         self.update_needed = False
 
@@ -378,7 +378,7 @@ class Download(Frame):
         time_count = time.time()
         self.options.destroy()
         self.form.destroy()
-        self.title.config(text='Getmyancestors')
+        self.title.config(text='FamilySearch to GEDCOM')
         self.btn_valid.config(state='disabled')
         self.info(_('Download starting individuals...'))
         self.tree.add_indis(todo)
@@ -447,9 +447,9 @@ class Download(Frame):
             time.sleep(0.1)
 
 
-class Gui(Notebook):
+class FStoGEDCOM(Notebook):
     def __init__(self, master, **kwargs):
-        super(Gui, self).__init__(master, **kwargs)
+        super(FStoGEDCOM, self).__init__(master, **kwargs)
         self.download = Download(self)
         self.merge = Merge(self)
         self.add(self.download, text=_('Download GEDCOM'))
@@ -461,12 +461,12 @@ class Gui(Notebook):
         self.tab(self.index(self.merge), text=_('Merge GEDCOMs'))
         self.download.btn_quit.config(text=_('Quit'))
         self.merge.btn_quit.config(text=_('Quit'))
-        self.merge.btn_save.config(text=('Merge'))
+        self.merge.btn_save.config(text=_('Merge'))
         self.merge.btn_add_file.config(text=_('Add files'))
 
 
 if __name__ == '__main__':
     root = Tk()
-    root.title('Getmyancestors')
-    sign_in = Gui(root)
+    root.title('FamilySearch to GEDCOM')
+    sign_in = FStoGEDCOM(root)
     sign_in.mainloop()
