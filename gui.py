@@ -65,15 +65,17 @@ class EntryWithMenu(Entry):
 class FilesToMerge(Treeview):
     def __init__(self, master, **kwargs):
         super(FilesToMerge, self).__init__(master, selectmode='extended', **kwargs)
+        self.heading('#0', text=_('Files'))
+        self.column('#0', width=300)
         self.files = dict()
         self.bind('<Button-3>', self.popup)
 
     def add_file(self, filename):
         if any(f.name == filename for f in self.files.values()):
-            messagebox.showinfo(message=_('File already exist: ') + os.path.basename(filename))
+            messagebox.showinfo(_('Error'), message=_('File already exist: ') + os.path.basename(filename))
             return
         if not os.path.exists(filename):
-            messagebox.showinfo(message=_('File not found: ') + os.path.basename(filename))
+            messagebox.showinfo(_('Error'), message=_('File not found: ') + os.path.basename(filename))
             return
         file = open(filename, 'r', encoding='utf-8')
         new_id = self.insert('', 0, text=os.path.basename(filename))
@@ -98,13 +100,15 @@ class Merge(Frame):
 
     def __init__(self, master, **kwargs):
         super(Merge, self).__init__(master, **kwargs)
+        warning = Label(self, font=('a', 7), wraplength=300, justify='center', text=_('Warning: This tool should only be used to merge GEDCOM files from this software. If you use other GEDCOM files, the result is not guaranteed.'))
         self.files_to_merge = FilesToMerge(self, height=5)
         self.btn_add_file = Button(self, text=_('Add files'), command=self.add_files)
-        self.files_to_merge.pack()
-        self.btn_add_file.pack()
-        buttons = Frame(self)
+        buttons = Frame(self, borderwidth=20)
         self.btn_quit = Button(buttons, text=_('Quit'), command=self.quit)
         self.btn_save = Button(buttons, text=_('Merge'), command=self.save)
+        warning.pack()
+        self.files_to_merge.pack()
+        self.btn_add_file.pack()
         self.btn_quit.pack(side='left', padx=(0, 40))
         self.btn_save.pack(side='right', padx=(40, 0))
         buttons.pack()
@@ -114,6 +118,10 @@ class Merge(Frame):
             self.files_to_merge.add_file(filename)
 
     def save(self):
+        if not self.files_to_merge.files:
+            messagebox.showinfo(_('Error'), message=_('Please add GEDCOM files'))
+            return
+
         filename = filedialog.asksaveasfilename(title=_('Save as'), defaultextension='.ged', filetypes=(('GEDCOM', '.ged'), (_('All files'), '*.*')))
         tree = Tree()
 
@@ -179,6 +187,7 @@ class Merge(Frame):
         tree.reset_num()
         with open(filename, 'w', encoding='utf-8') as file:
             tree.print(file)
+        messagebox.showinfo(_('Info'), message=_('Files successfully merged'))
 
 
 # Sign In widget
@@ -209,6 +218,7 @@ class SignIn(Frame):
 class StartIndis(Treeview):
     def __init__(self, master, **kwargs):
         super(StartIndis, self).__init__(master, selectmode='extended', columns=('fid'), **kwargs)
+        self.heading('#0', text=_('Name'))
         self.column('fid', width=80)
         self.indis = dict()
         self.heading('fid', text='Id')
@@ -218,10 +228,10 @@ class StartIndis(Treeview):
         if not fid:
             return
         if fid in self.indis.values():
-            messagebox.showinfo(message=_('ID already exist'))
+            messagebox.showinfo(_('Error'), message=_('ID already exist'))
             return
         if not re.match(r'[A-Z0-9]{4}-[A-Z0-9]{3}', fid):
-            messagebox.showinfo(message=_('Invalid FamilySearch ID: ') + fid)
+            messagebox.showinfo(_('Error'), message=_('Invalid FamilySearch ID: ') + fid)
             return
         fs = self.master.master.master.fs
         data = fs.get_url('/platform/tree/persons/%s.json' % fid)
@@ -231,7 +241,7 @@ class StartIndis(Treeview):
                     if name['preferred']:
                         self.indis[self.insert('', 0, text=name['nameForms'][0]['fullText'], values=fid)] = fid
                         return True
-        messagebox.showinfo(message=_('Individual not found'))
+        messagebox.showinfo(_('Error'), message=_('Individual not found'))
 
     def popup(self, event):
         item = self.identify_row(event.y)
@@ -305,7 +315,7 @@ class Download(Frame):
         self.form = Frame(self)
         self.sign_in = SignIn(self.form)
         self.options = None
-        self.title = Label(self, text=_('Sign In to FamilySearch'), font='a 12 bold')
+        self.title = Label(self, text=_('Sign In to FamilySearch'), font=('a', 12, 'bold'))
         buttons = Frame(self)
         self.btn_quit = Button(buttons, text=_('Quit'), command=Thread(target=self.quit).start)
         self.btn_valid = Button(buttons, text=_('Sign In'), command=self.command_in_thread(self.login))
@@ -336,7 +346,7 @@ class Download(Frame):
         self.info(_('Login to FamilySearch...'))
         self.fs = Session(self.sign_in.username.get(), self.sign_in.password.get(), verbose=True, logfile=self.logfile, timeout=1)
         if not self.fs.logged:
-            messagebox.showinfo(message=_('The username or password was incorrect'))
+            messagebox.showinfo(_('Error'), message=_('The username or password was incorrect'))
             self.btn_valid.config(state='normal')
             self.info('')
             return
@@ -363,7 +373,7 @@ class Download(Frame):
         todo = [self.options.start_indis.indis[key] for key in sorted(self.options.start_indis.indis)]
         for fid in todo:
             if not re.match(r'[A-Z0-9]{4}-[A-Z0-9]{3}', fid):
-                messagebox.showinfo(message=_('Invalid FamilySearch ID: ') + fid)
+                messagebox.showinfo(_('Error'), message=_('Invalid FamilySearch ID: ') + fid)
                 return
         time_count = time.time()
         self.options.destroy()

@@ -227,10 +227,25 @@ translations = {
     'File not found: ': {
         'fr': 'Fichier non trouvé: ',
     },
-    'Save': {
-        'fr': 'Sauvegarder',
+    'Files successfully merged': {
+        'fr': 'Fichiers fusionnés avec succès',
     },
-    'Save': {
-        'fr': 'Sauvegarder',
+    'Files': {
+        'fr': 'Fichiers',
+    },
+    'Please add GEDCOM files': {
+        'fr': 'Veuillez ajouter des fichiers GEDCOM',
+    },
+    'Error': {
+        'fr': 'Erreur',
+    },
+    'Info': {
+        'fr': 'Info',
+    },
+    'Name': {
+        'fr': 'Nom',
+    },
+    'Warning: This tool should only be used to merge GEDCOM files from this software. If you use other GEDCOM files, the result is not guaranteed.': {
+        'fr': "Attention : Cet outil ne devrait être utilisé qu'avec des fichiers GEDCOM provenant de ce logiciel. Si vous utilisez d'autres fichiers GEDCOM, le résultat n'est pas garanti.",
     },
 }
