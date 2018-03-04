@@ -128,5 +128,124 @@ translations = {
     'Download ': {
         'fr': 'Téléchargement de la ',
     },
-
+    'Copy': {
+        'fr': 'Copier',
+    },
+    'Cut': {
+        'fr': 'Couper',
+    },
+    'Paste': {
+        'fr': 'Coller',
+    },
+    'Username:': {
+        'fr': "Nom d'utilisateur :",
+    },
+    'Password:': {
+        'fr': 'Mot de passe :',
+    },
+    'ID already exist': {
+        'fr': 'Cet identifiant existe déjà',
+    },
+    'Invalid FamilySearch ID: ': {
+        'fr': 'Identifiant FamilySearch invalide : ',
+    },
+    'Individual not found': {
+        'fr': 'Personne non trouvée',
+    },
+    'Remove': {
+        'fr': 'Supprimer',
+    },
+    'Number of generations to ascend': {
+        'fr': "Nombre de générations d'ancêtres",
+    },
+    'Number of generations to descend': {
+        'fr': 'Nombre de générations de descendants',
+    },
+    'Add a Familysearch ID': {
+        'fr': 'Ajouter un identifiant FamilySearch',
+    },
+    'Add spouses and couples information': {
+        'fr': 'Ajouter les conjoints et les informations de mariage',
+    },
+    'Add Temple information': {
+        'fr': 'Ajouter les informations du Temple',
+    },
+    'Add list of contributors in notes': {
+        'fr': 'Ajouter une liste des contributeurs dans les notes',
+    },
+    'Sign In to FamilySearch': {
+        'fr': 'Ouvrir une session FamilySearch',
+    },
+    'Sign In': {
+        'fr': 'Ouvrir une session',
+    },
+    'Quit': {
+        'fr': 'Quitter',
+    },
+    'Save as': {
+        'fr': 'Enregistrer sous',
+    },
+    'All files': {
+        'fr': 'Tous les fichiers',
+    },
+    'Login to FamilySearch...': {
+        'fr': 'Connection à FamilySearch...',
+    },
+    'The username or password was incorrect': {
+        'fr': "Le nom d'utilisateur ou le mot de passe est incorrect",
+    },
+    'Options': {
+        'fr': 'Options',
+    },
+    'Download': {
+        'fr': 'Télécharger',
+    },
+    'Save': {
+        'fr': 'Sauvegarder',
+    },
+    'Click below to save your GEDCOM file': {
+        'fr': 'Cliquez ci-dessous pour sauvegarder votre fichier GEDCOM',
+    },
+    'Download GEDCOM': {
+        'fr': 'Télécharger un GEDCOM',
+    },
+    'Merge GEDCOMs': {
+        'fr': 'Fusionner des GEDCOM',
+    },
+    'Merge': {
+        'fr': 'Fusionner',
+    },
+    'Add files': {
+        'fr': 'Ajouter des fichiers',
+    },
+    'File already exist: ': {
+        'fr': 'Ce fichier existe déjà: ',
+    },
+    'Open': {
+        'fr': 'Ouvrir',
+    },
+    'File not found: ': {
+        'fr': 'Fichier non trouvé: ',
+    },
+    'Files successfully merged': {
+        'fr': 'Fichiers fusionnés avec succès',
+    },
+    'Files': {
+        'fr': 'Fichiers',
+    },
+    'Please add GEDCOM files': {
+        'fr': 'Veuillez ajouter des fichiers GEDCOM',
+    },
+    'Error': {
+        'fr': 'Erreur',
+    },
+    'Info': {
+        'fr': 'Info',
+    },
+    'Name': {
+        'fr': 'Nom',
+    },
+    'Warning: This tool should only be used to merge GEDCOM files from this software. If you use other GEDCOM files, the result is not guaranteed.': {
+        'fr': "Attention : Cet outil ne devrait être utilisé qu'avec des fichiers GEDCOM provenant de ce logiciel. Si vous utilisez d'autres fichiers GEDCOM, le résultat n'est pas garanti.",
+    },
 }
