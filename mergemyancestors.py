@@ -381,10 +381,14 @@ if __name__ == '__main__':
                 tree.fam[(husb, wife)] = Fam(husb, wife, tree, fam_counter)
                 tree.fam[(husb, wife)].tree = tree
             tree.fam[(husb, wife)].chil_fid |= ged.fam[num].chil_fid
-            tree.fam[(husb, wife)].fid = ged.fam[num].fid
-            tree.fam[(husb, wife)].facts = ged.fam[num].facts
-            tree.fam[(husb, wife)].notes = ged.fam[num].notes
-            tree.fam[(husb, wife)].sources = ged.fam[num].sources
+            if ged.fam[num].fid:
+                tree.fam[(husb, wife)].fid = ged.fam[num].fid
+            if ged.fam[num].facts:
+                tree.fam[(husb, wife)].facts = ged.fam[num].facts
+            if ged.fam[num].notes:
+                tree.fam[(husb, wife)].notes = ged.fam[num].notes
+            if ged.fam[num].sources:
+                tree.fam[(husb, wife)].sources = ged.fam[num].sources
             tree.fam[(husb, wife)].sealing_spouse = ged.fam[num].sealing_spouse
 
     # merge notes by text
