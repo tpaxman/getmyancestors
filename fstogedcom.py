@@ -314,9 +314,9 @@ class Download(Frame):
         super(Download, self).__init__(master, borderwidth=20, **kwargs)
         self.fs = None
         self.tree = None
-        self.logfile = open('download.log', 'w')
+        self.logfile = None
         info = Frame(self, borderwidth=10)
-        self.info_label = Label(info, borderwidth=20, justify='center')
+        self.info_label = Label(info, wraplength=300, borderwidth=20, justify='center')
         self.form = Frame(self)
         self.sign_in = SignIn(self.form)
         self.options = None
@@ -349,6 +349,7 @@ class Download(Frame):
         global _
         self.btn_valid.config(state='disabled')
         self.info(_('Login to FamilySearch...'))
+        self.logfile = open('download.log', 'w', encoding='utf-8')
         self.fs = Session(self.sign_in.username.get(), self.sign_in.password.get(), verbose=True, logfile=self.logfile, timeout=1)
         if not self.fs.logged:
             messagebox.showinfo(_('Error'), message=_('The username or password was incorrect'))
@@ -371,7 +372,8 @@ class Download(Frame):
 
     def quit(self):
         self.update_needed = False
-        self.logfile.close()
+        if self.logfile:
+            self.logfile.close()
         return super(Download, self).quit()
 
     def download(self):
