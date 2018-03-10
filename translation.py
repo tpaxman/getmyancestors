@@ -203,8 +203,8 @@ translations = {
     'Save': {
         'fr': 'Sauvegarder',
     },
-    'Click below to save your GEDCOM file': {
-        'fr': 'Cliquez ci-dessous pour sauvegarder votre fichier GEDCOM',
+    'Success ! Click below to save your GEDCOM file': {
+        'fr': 'Succès ! Cliquez ci-dessous pour sauvegarder votre fichier GEDCOM',
     },
     'Download GEDCOM': {
         'fr': 'Télécharger un GEDCOM',
@@ -247,5 +247,20 @@ translations = {
     },
     'Warning: This tool should only be used to merge GEDCOM files from this software. If you use other GEDCOM files, the result is not guaranteed.': {
         'fr': "Attention : Cet outil ne devrait être utilisé qu'avec des fichiers GEDCOM provenant de ce logiciel. Si vous utilisez d'autres fichiers GEDCOM, le résultat n'est pas garanti.",
+    },
+    'Individuals: %s': {
+        'fr': 'Personnes : %s',
+    },
+    'Families: %s': {
+        'fr': 'Familles : %s',
+    },
+    'Sources: %s': {
+        'fr': 'Sources : %s',
+    },
+    'Notes: %S': {
+        'fr': 'Notes : %s',
+    },
+    'Elapsed time: %s:%s': {
+        'fr': 'Temps écoulé : %s:%s',
     },
 }
