@@ -161,7 +161,7 @@ translations = {
     'Number of generations to descend': {
         'fr': 'Nombre de générations de descendants',
     },
-    'Add a Familysearch ID': {
+    'Add a FamilySearch ID': {
         'fr': 'Ajouter un identifiant FamilySearch',
     },
     'Add spouses and couples information': {
