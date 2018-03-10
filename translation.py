@@ -263,4 +263,7 @@ translations = {
     'Elapsed time: %s:%s': {
         'fr': 'Temps écoulé : %s:%s',
     },
+    'Please enter your FamilySearch username and password.': {
+        'fr': "Veuillez entrer votre nom d'utilisateur et votre mot de passe FamilySearch."
+    }
 }

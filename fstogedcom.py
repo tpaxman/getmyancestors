@@ -287,7 +287,7 @@ class Options(Frame):
         entry_ancestors = EntryWithMenu(self, textvariable=self.ancestors, width=5)
         label_descendants = Label(self, text=_('Number of generations to descend'))
         entry_descendants = EntryWithMenu(self, textvariable=self.descendants, width=5)
-        btn_add_indi = Button(btn, text=_('Add a Familysearch ID'), command=self.add_indi)
+        btn_add_indi = Button(btn, text=_('Add a FamilySearch ID'), command=self.add_indi)
         btn_spouses = Checkbutton(self, text='\t' + _('Add spouses and couples information'), variable=self.spouses)
         btn_ordinances = Checkbutton(self, text='\t' + _('Add Temple information'), variable=self.ordinances)
         btn_contributors = Checkbutton(self, text='\t' + _('Add list of contributors in notes'), variable=self.contributors)
@@ -368,6 +368,11 @@ class Download(Frame):
 
     def login(self):
         global _
+        username = self.sign_in.username.get()
+        password = self.sign_in.password.get()
+        if not (username and password):
+            messagebox.showinfo(message=_('Please enter your FamilySearch username and password.'))
+            return
         self.btn_valid.config(state='disabled')
         self.info(_('Login to FamilySearch...'))
         self.logfile = open('download.log', 'w', encoding='utf-8')
