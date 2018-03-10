@@ -68,7 +68,7 @@ class EntryWithMenu(Entry):
 # List of files to merge
 class FilesToMerge(Treeview):
     def __init__(self, master, **kwargs):
-        super(FilesToMerge, self).__init__(master, selectmode='extended', **kwargs)
+        super(FilesToMerge, self).__init__(master, selectmode='extended', height=5, **kwargs)
         self.heading('#0', text=_('Files'))
         self.column('#0', width=300)
         self.files = dict()
@@ -106,7 +106,7 @@ class Merge(Frame):
     def __init__(self, master, **kwargs):
         super(Merge, self).__init__(master, **kwargs)
         warning = Label(self, font=('a', 7), wraplength=300, justify='center', text=_('Warning: This tool should only be used to merge GEDCOM files from this software. If you use other GEDCOM files, the result is not guaranteed.'))
-        self.files_to_merge = FilesToMerge(self, height=5)
+        self.files_to_merge = FilesToMerge(self)
         self.btn_add_file = Button(self, text=_('Add files'), command=self.add_files)
         buttons = Frame(self, borderwidth=20)
         self.btn_quit = Button(buttons, text=_('Quit'), command=self.quit)
@@ -194,6 +194,11 @@ class Merge(Frame):
             tree.print(file)
         messagebox.showinfo(_('Info'), message=_('Files successfully merged'))
 
+    # prevent exception on quit during download
+    def quit(self):
+        super(Merge, self).quit()
+        os._exit(1)
+
 
 # Sign In widget
 class SignIn(Frame):
@@ -222,8 +227,9 @@ class SignIn(Frame):
 # List of starting individuals
 class StartIndis(Treeview):
     def __init__(self, master, **kwargs):
-        super(StartIndis, self).__init__(master, selectmode='extended', columns=('fid'), **kwargs)
+        super(StartIndis, self).__init__(master, selectmode='extended', height=5, columns=('fid',), **kwargs)
         self.heading('#0', text=_('Name'))
+        self.column('#0', width=250)
         self.column('fid', width=80)
         self.indis = dict()
         self.heading('fid', text='Id')
@@ -272,7 +278,7 @@ class Options(Frame):
         self.spouses = IntVar()
         self.ordinances = IntVar()
         self.contributors = IntVar()
-        self.start_indis = StartIndis(self, height=5)
+        self.start_indis = StartIndis(self)
         self.fid = StringVar()
         btn = Frame(self)
         entry_fid = EntryWithMenu(btn, textvariable=self.fid, width=16)
@@ -285,10 +291,10 @@ class Options(Frame):
         btn_spouses = Checkbutton(self, text='\t' + _('Add spouses and couples information'), variable=self.spouses)
         btn_ordinances = Checkbutton(self, text='\t' + _('Add Temple information'), variable=self.ordinances)
         btn_contributors = Checkbutton(self, text='\t' + _('Add list of contributors in notes'), variable=self.contributors)
-        self.start_indis.grid(row=0, sticky='ew', column=0, columnspan=3)
-        entry_fid.grid(row=0, column=0, sticky='e')
+        self.start_indis.grid(row=0, column=0, columnspan=3)
+        entry_fid.grid(row=0, column=0, sticky='w')
         btn_add_indi.grid(row=0, column=1, sticky='w')
-        btn.grid(row=1, column=0, columnspan=2)
+        btn.grid(row=1, column=0, columnspan=2, sticky='w')
         entry_ancestors.grid(row=2, column=0, sticky='w')
         label_ancestors.grid(row=2, column=1, sticky='w')
         entry_descendants.grid(row=3, column=0, sticky='w')
@@ -315,8 +321,24 @@ class Download(Frame):
         self.fs = None
         self.tree = None
         self.logfile = None
+
+        # User informations
+        self.info_tree = False
+        self.start_time = None
         info = Frame(self, borderwidth=10)
-        self.info_label = Label(info, wraplength=300, borderwidth=20, justify='center')
+        self.info_label = Label(info, wraplength=350, borderwidth=20, justify='center', font=('a', 10, 'bold'))
+        self.info_indis = Label(info)
+        self.info_fams = Label(info)
+        self.info_sources = Label(info)
+        self.info_notes = Label(info)
+        self.time = Label(info)
+        self.info_label.grid(row=0, column=0, columnspan=2)
+        self.info_indis.grid(row=1, column=0)
+        self.info_fams.grid(row=1, column=1)
+        self.info_sources.grid(row=2, column=0)
+        self.info_notes.grid(row=2, column=1)
+        self.time.grid(row=3, column=0, columnspan=2)
+
         self.form = Frame(self)
         self.sign_in = SignIn(self.form)
         self.options = None
@@ -329,7 +351,6 @@ class Download(Frame):
         self.form.pack()
         self.btn_quit.pack(side='left', padx=(0, 40))
         self.btn_valid.pack(side='right', padx=(40, 0))
-        self.info_label.pack()
         info.pack()
         buttons.pack(side='bottom')
         self.pack()
@@ -374,7 +395,9 @@ class Download(Frame):
         self.update_needed = False
         if self.logfile:
             self.logfile.close()
-        return super(Download, self).quit()
+        super(Download, self).quit()
+        # prevent exception during download
+        os._exit(1)
 
     def download(self):
         todo = [self.options.start_indis.indis[key] for key in sorted(self.options.start_indis.indis)]
@@ -382,12 +405,13 @@ class Download(Frame):
             if not re.match(r'[A-Z0-9]{4}-[A-Z0-9]{3}', fid):
                 messagebox.showinfo(_('Error'), message=_('Invalid FamilySearch ID: ') + fid)
                 return
-        time_count = time.time()
+        self.start_time = time.time()
         self.options.destroy()
         self.form.destroy()
         self.title.config(text='FamilySearch to GEDCOM')
         self.btn_valid.config(state='disabled')
         self.info(_('Download starting individuals...'))
+        self.info_tree = True
         self.tree.add_indis(todo)
         todo = set(todo)
         done = set()
@@ -435,10 +459,8 @@ class Download(Frame):
 
         self.tree.reset_num()
         self.btn_valid.config(command=self.save, state='normal', text=_('Save'))
-        self.info(
-            text=_('Downloaded %s individuals, %s families, %s sources and %s notes in %s seconds with %s HTTP requests.') %
-            (str(len(self.tree.indi)), str(len(self.tree.fam)), str(len(self.tree.sources)), str(len(self.tree.notes)), str(round(time.time() - time_count)), str(self.fs.counter)) +
-            '\n' + _('Click below to save your GEDCOM file'))
+        self.info(text=_('Success ! Click below to save your GEDCOM file'))
+        self.update_info_tree()
         self.update_needed = False
 
     def command_in_thread(self, func):
@@ -448,15 +470,27 @@ class Download(Frame):
             Thread(target=func).start()
         return res
 
+    def update_info_tree(self):
+        if self.info_tree and self.start_time and self.tree:
+            self.info_indis.config(text=_('Individuals: %s') % len(self.tree.indi))
+            self.info_fams.config(text=_('Families: %s') % len(self.tree.fam))
+            self.info_sources.config(text=_('Sources: %s') % len(self.tree.sources))
+            self.info_notes.config(text=_('Notes: %s') % len(self.tree.notes))
+            t = round(time.time() - self.start_time)
+            minutes = t // 60
+            seconds = t % 60
+            self.time.config(text=_('Elapsed time: %s:%s') % (minutes, '00%s'[len(str(seconds)):] % seconds))
+
     def update_gui(self):
         while self.update_needed:
+            self.update_info_tree()
             self.master.update()
             time.sleep(0.1)
 
 
 class FStoGEDCOM(Notebook):
     def __init__(self, master, **kwargs):
-        super(FStoGEDCOM, self).__init__(master, **kwargs)
+        super(FStoGEDCOM, self).__init__(master, width=400, **kwargs)
         self.download = Download(self)
         self.merge = Merge(self)
         self.add(self.download, text=_('Download GEDCOM'))
@@ -475,5 +509,5 @@ class FStoGEDCOM(Notebook):
 if __name__ == '__main__':
     root = Tk()
     root.title('FamilySearch to GEDCOM')
-    sign_in = FStoGEDCOM(root)
-    sign_in.mainloop()
+    fstogedcom = FStoGEDCOM(root)
+    fstogedcom.mainloop()
