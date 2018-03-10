@@ -246,7 +246,7 @@ translations = {
         'fr': 'Nom',
     },
     'Warning: This tool should only be used to merge GEDCOM files from this software. If you use other GEDCOM files, the result is not guaranteed.': {
-        'fr': "Attention : Cet outil ne devrait être utilisé qu'avec des fichiers GEDCOM provenant de ce logiciel. Si vous utilisez d'autres fichiers GEDCOM, le résultat n'est pas garanti.",
+        'fr': "Attention : Cet outil ne devrait être utilisé qu'avec des fichiers GEDCOM provenants de ce logiciel. Si vous utilisez d'autres fichiers GEDCOM, le résultat n'est pas garanti.",
     },
     'Individuals: %s': {
         'fr': 'Personnes : %s',
@@ -257,7 +257,7 @@ translations = {
     'Sources: %s': {
         'fr': 'Sources : %s',
     },
-    'Notes: %S': {
+    'Notes: %s': {
         'fr': 'Notes : %s',
     },
     'Elapsed time: %s:%s': {
