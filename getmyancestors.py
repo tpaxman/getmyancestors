@@ -157,52 +157,6 @@ class Session:
             self.write_log('FamilySearch session id: ' + self.fssessionid)
             return True
 
-    # retrieve FamilySearch developer key (wget -O- --max-redirect 0 https://familysearch.org/auth/familysearch/login?ldsauth=false)
-    def get_key(self):
-        url = 'https://familysearch.org/auth/familysearch/login'
-        while True:
-            self.write_log('Downloading: ' + url)
-            try:
-                r = requests.get(url, params={'ldsauth': False}, allow_redirects=False, timeout=self.timeout)
-                location = r.headers['Location']
-                idx = location.index('client_id=')
-                key = location[idx + 10:idx + 49]
-            except ValueError:
-                self.write_log('FamilySearch developer key not found')
-                time.sleep(self.timeout)
-                continue
-            self.write_log('FamilySearch developer key: ' + key)
-            return key
-
-    # retrieve FamilySearch session ID (https://familysearch.org/developers/docs/guides/oauth1/login)
-    def old_login(self, oldmethod=False):
-        url = 'https://api.familysearch.org/identity/v2/login'
-        data = {'key': self.key, 'username': self.username, 'password': self.password}
-        while True:
-            self.write_log('Downloading: ' + url)
-            try:
-                r = requests.post(url, data, timeout=self.timeout)
-            except requests.exceptions.ReadTimeout:
-                self.write_log('Read timed out')
-                continue
-            except requests.exceptions.ConnectionError:
-                self.write_log('Connection aborted')
-                time.sleep(self.timeout)
-                continue
-            self.write_log('Status code: ' + str(r.status_code))
-            if r.status_code == 401:
-                self.write_log('Login failure')
-                raise Exception('Login failure')
-            try:
-                r.raise_for_status()
-            except requests.exceptions.HTTPError:
-                self.write_log('HTTPError')
-                time.sleep(self.timeout)
-                continue
-            self.fssessionid = r.cookies['fssessionid']
-            self.write_log('FamilySearch session id: ' + self.fssessionid)
-            return
-
     # retrieve JSON structure from FamilySearch URL
     def get_url(self, url):
         self.counter += 1
