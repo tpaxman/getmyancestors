@@ -316,8 +316,9 @@ class Options(Frame):
 
 # Main widget
 class Download(Frame):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, app_key, **kwargs):
         super(Download, self).__init__(master, borderwidth=20, **kwargs)
+        self.app_key = app_key
         self.fs = None
         self.tree = None
         self.logfile = None
@@ -376,7 +377,7 @@ class Download(Frame):
         self.btn_valid.config(state='disabled')
         self.info(_('Login to FamilySearch...'))
         self.logfile = open('download.log', 'w', encoding='utf-8')
-        self.fs = Session(self.sign_in.username.get(), self.sign_in.password.get(), verbose=True, logfile=self.logfile, timeout=1)
+        self.fs = Session(self.sign_in.username.get(), self.sign_in.password.get(), self.app_key, verbose=True, logfile=self.logfile, timeout=1)
         if not self.fs.logged:
             messagebox.showinfo(_('Error'), message=_('The username or password was incorrect'))
             self.btn_valid.config(state='normal')
@@ -494,9 +495,9 @@ class Download(Frame):
 
 
 class FStoGEDCOM(Notebook):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, app_key, **kwargs):
         super(FStoGEDCOM, self).__init__(master, width=400, **kwargs)
-        self.download = Download(self)
+        self.download = Download(self, app_key)
         self.merge = Merge(self)
         self.add(self.download, text=_('Download GEDCOM'))
         self.add(self.merge, text=_('Merge GEDCOMs'))
@@ -514,5 +515,5 @@ class FStoGEDCOM(Notebook):
 if __name__ == '__main__':
     root = Tk()
     root.title('FamilySearch to GEDCOM')
-    fstogedcom = FStoGEDCOM(root)
+    fstogedcom = FStoGEDCOM(root, 'your_app_key')
     fstogedcom.mainloop()
