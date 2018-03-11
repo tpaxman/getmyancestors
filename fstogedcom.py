@@ -514,5 +514,6 @@ class FStoGEDCOM(Notebook):
 if __name__ == '__main__':
     root = Tk()
     root.title('FamilySearch to GEDCOM')
+    root.iconbitmap('fstogedcom.ico')
     fstogedcom = FStoGEDCOM(root)
     fstogedcom.mainloop()
