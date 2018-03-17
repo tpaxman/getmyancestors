@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # global import
-from tkinter import Tk, StringVar, IntVar, filedialog, messagebox, Menu, TclError
+from tkinter import Tk, StringVar, IntVar, filedialog, messagebox, Menu, TclError, PhotoImage
 from tkinter.ttk import Frame, Label, Entry, Button, Checkbutton, Treeview, Notebook
 from threading import Thread
 from diskcache import Cache
@@ -514,6 +514,6 @@ class FStoGEDCOM(Notebook):
 if __name__ == '__main__':
     root = Tk()
     root.title('FamilySearch to GEDCOM')
-    root.iconbitmap('fstogedcom.ico')
+    root.iconphoto(True, PhotoImage(file='fstogedcom.png'))
     fstogedcom = FStoGEDCOM(root)
     fstogedcom.mainloop()
