@@ -11,6 +11,7 @@ import tempfile
 import asyncio
 import re
 import os
+import sys
 
 # local import
 from getmyancestors import Session, Tree, Indi, Fam
@@ -514,6 +515,7 @@ class FStoGEDCOM(Notebook):
 if __name__ == '__main__':
     root = Tk()
     root.title('FamilySearch to GEDCOM')
-    root.iconphoto(True, PhotoImage(file='fstogedcom.png'))
+    if sys.platform != 'darwin':
+        root.iconphoto(True, PhotoImage(file='fstogedcom.png'))
     fstogedcom = FStoGEDCOM(root)
     fstogedcom.mainloop()
