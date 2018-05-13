@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # global import
-from tkinter import Tk, StringVar, IntVar, filedialog, messagebox, Menu, TclError
+from tkinter import Tk, StringVar, IntVar, filedialog, messagebox, Menu, TclError, PhotoImage
 from tkinter.ttk import Frame, Label, Entry, Button, Checkbutton, Treeview, Notebook
 from threading import Thread
 from diskcache import Cache
@@ -11,6 +11,7 @@ import tempfile
 import asyncio
 import re
 import os
+import sys
 
 # local import
 from getmyancestors import Session, Tree, Indi, Fam
@@ -515,5 +516,7 @@ class FStoGEDCOM(Notebook):
 if __name__ == '__main__':
     root = Tk()
     root.title('FamilySearch to GEDCOM')
+    if sys.platform != 'darwin':
+        root.iconphoto(True, PhotoImage(file='fstogedcom.png'))
     fstogedcom = FStoGEDCOM(root, 'your_app_key')
     fstogedcom.mainloop()
