@@ -352,7 +352,7 @@ class Memorie:
     def print(self, file=sys.stdout):
         file.write('1 OBJE\n2 FORM URL\n')
         if self.description:
-            file.write('2 TITL ' + cont(2, self.description) + '\n')
+            file.write('2 TITL ' + cont(3, self.description) + '\n')
         if self.url:
             file.write('2 FILE ' + self.url + '\n')
 
@@ -588,7 +588,7 @@ class Indi:
         for source, quote in self.sources:
             source.link(file, 1)
             if quote:
-                file.write('2 PAGE ' + cont(2, quote) + '\n')
+                file.write('2 PAGE ' + cont(3, quote) + '\n')
 
 
 # GEDCOM family class
@@ -688,7 +688,7 @@ class Fam:
         for source, quote in self.sources:
             source.link(file, 1)
             if quote:
-                file.write('2 PAGE ' + cont(2, quote) + '\n')
+                file.write('2 PAGE ' + cont(3, quote) + '\n')
 
 
 # family tree class
