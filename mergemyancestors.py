@@ -218,6 +218,8 @@ class Gedcom:
                 fact.note = self.note[num]
             elif self.tag == 'CONT':
                 fact.value += '\n' + self.data
+            elif self.tag == 'CONC':
+                fact.value += self.data
         self.flag = True
         return fact
 
@@ -237,6 +239,8 @@ class Gedcom:
         while self.__get_line():
             if self.tag == 'CONT':
                 text += '\n' + self.data
+            elif self.tag == 'CONC':
+                text += self.data
             else:
                 break
         self.flag = True

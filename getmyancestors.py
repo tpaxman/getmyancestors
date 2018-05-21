@@ -83,8 +83,25 @@ ORDINANCES_STATUS = {
 }
 
 
-def cont(level, string):
-    return re.sub(r'[\r\n]+', '\n' + str(level) + ' CONT ', string)
+def cont(string):
+    level = int(string[:1]) + 1
+    lines = string.splitlines()
+    res = list()
+    max_len = 255
+    for line in lines:
+        c_line = line
+        to_conc = list()
+        while len(c_line.encode('utf-8')) > max_len:
+            index = min(max_len, len(c_line) - 2)
+            while (len(c_line[:index].encode('utf-8')) > max_len or re.search(r'[ \t\v]', c_line[index - 1:index + 1])) and index > 1:
+                index -= 1
+            to_conc.append(c_line[:index])
+            c_line = c_line[index:]
+            max_len = 248
+        to_conc.append(c_line)
+        res.append(('\n%s CONC ' % level).join(to_conc))
+        max_len = 248
+    return ('\n%s CONT ' % level).join(res)
 
 
 # FamilySearch session class
@@ -239,7 +256,7 @@ class Note:
         self.text = text.strip()
 
     def print(self, file=sys.stdout):
-        file.write('0 @N' + str(self.num) + '@ NOTE ' + cont(1, self.text) + '\n')
+        file.write(cont('0 @N' + str(self.num) + '@ NOTE ' + self.text) + '\n')
 
     def link(self, file=sys.stdout, level=1):
         file.write(str(level) + ' NOTE @N' + str(self.num) + '@\n')
@@ -275,11 +292,11 @@ class Source:
     def print(self, file=sys.stdout):
         file.write('0 @S' + str(self.num) + '@ SOUR \n')
         if self.title:
-            file.write('1 TITL ' + cont(2, self.title) + '\n')
+            file.write(cont('1 TITL ' + self.title) + '\n')
         if self.citation:
-            file.write('1 AUTH ' + cont(2, self.citation) + '\n')
+            file.write(cont('1 AUTH ' + self.citation) + '\n')
         if self.url:
-            file.write('1 PUBL ' + cont(2, self.url) + '\n')
+            file.write(cont('1 PUBL ' + self.url) + '\n')
         for n in self.notes:
             n.link(file, 1)
         file.write('1 REFN ' + self.fid + '\n')
@@ -317,20 +334,21 @@ class Fact:
 
     def print(self, file=sys.stdout, key=None):
         if self.type in FACT_TAGS:
-            file.write('1 ' + FACT_TAGS[self.type])
+            tmp = '1 ' + FACT_TAGS[self.type]
             if self.value:
-                file.write(' ' + cont(2, self.value))
+                tmp += ' ' + self.value
+            file.write(cont(tmp))
         elif self.type:
             file.write('1 EVEN\n2 TYPE ' + self.type)
             if self.value:
-                file.write('\n2 NOTE Description: ' + cont(3, self.value))
+                file.write('\n' + cont('2 NOTE Description: ' + self.value))
         else:
             return
         file.write('\n')
         if self.date:
             file.write('2 DATE ' + self.date + '\n')
         if self.place:
-            file.write('2 PLAC ' + cont(3, self.place) + '\n')
+            file.write(cont('2 PLAC ' + self.place) + '\n')
         if self.map:
             latitude, longitude = self.map
             file.write('3 MAP\n4 LATI ' + latitude + '\n4 LONG ' + longitude + '\n')
@@ -352,7 +370,7 @@ class Memorie:
     def print(self, file=sys.stdout):
         file.write('1 OBJE\n2 FORM URL\n')
         if self.description:
-            file.write('2 TITL ' + cont(3, self.description) + '\n')
+            file.write(cont('2 TITL ' + self.description) + '\n')
         if self.url:
             file.write('2 FILE ' + self.url + '\n')
 
@@ -588,7 +606,7 @@ class Indi:
         for source, quote in self.sources:
             source.link(file, 1)
             if quote:
-                file.write('2 PAGE ' + cont(3, quote) + '\n')
+                file.write(cont('2 PAGE ' + quote) + '\n')
 
 
 # GEDCOM family class
@@ -688,7 +706,7 @@ class Fam:
         for source, quote in self.sources:
             source.link(file, 1)
             if quote:
-                file.write('2 PAGE ' + cont(3, quote) + '\n')
+                file.write(cont('2 PAGE ' + quote) + '\n')
 
 
 # family tree class
