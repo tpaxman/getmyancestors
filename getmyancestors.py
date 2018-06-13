@@ -346,7 +346,7 @@ class Fact:
             return
         file.write('\n')
         if self.date:
-            file.write('2 DATE ' + self.date + '\n')
+            file.write(cont('2 DATE ' + self.date) + '\n')
         if self.place:
             file.write(cont('2 PLAC ' + self.place) + '\n')
         if self.map:
@@ -372,7 +372,7 @@ class Memorie:
         if self.description:
             file.write(cont('2 TITL ' + self.description) + '\n')
         if self.url:
-            file.write('2 FILE ' + self.url + '\n')
+            file.write(cont('2 FILE ' + self.url) + '\n')
 
 
 class Name:
@@ -398,10 +398,10 @@ class Name:
                 self.note = Note(data['attribution']['changeMessage'], tree)
 
     def print(self, file=sys.stdout, typ=None):
-        file.write('1 NAME ' + self.given + ' /' + self.surname + '/')
+        tmp = '1 NAME ' + self.given + ' /' + self.surname + '/'
         if self.suffix:
-            file.write(' ' + self.suffix)
-        file.write('\n')
+            tmp += ' ' + self.suffix
+        file.write(cont(tmp) + '\n')
         if typ:
             file.write('2 TYPE ' + typ + '\n')
         if self.prefix:
@@ -423,7 +423,7 @@ class Ordinance:
 
     def print(self, file=sys.stdout):
         if self.date:
-            file.write('2 DATE ' + self.date + '\n')
+            file.write(cont('2 DATE ' + self.date) + '\n')
         if self.temple_code:
             file.write('2 TEMP ' + self.temple_code + '\n')
         if self.status in ORDINANCES_STATUS:
@@ -571,7 +571,7 @@ class Indi:
         if self.name:
             self.name.print(file)
         for o in self.nicknames:
-            file.write('2 NICK ' + o.given + ' ' + o .surname + '\n')
+            file.write(cont('2 NICK ' + o.given + ' ' + o .surname) + '\n')
         for o in self.birthnames:
             o.print(file)
         for o in self.aka:

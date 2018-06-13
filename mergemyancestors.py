@@ -161,7 +161,7 @@ class Gedcom:
         self.flag = True
 
     def __get_name(self):
-        parts = self.data.split('/')
+        parts = self.__get_text().split('/')
         name = Name()
         added = False
         name.given = parts[0].strip()
@@ -203,7 +203,7 @@ class Gedcom:
             if self.tag == 'TYPE':
                 fact.type = self.data
             if self.tag == 'DATE':
-                fact.date = self.data
+                fact.date = self.__get_text()
             elif self.tag == 'PLAC':
                 fact.place = self.__get_text()
             elif self.tag == 'MAP':
@@ -284,7 +284,7 @@ class Gedcom:
             if self.tag == 'TITL':
                 memorie.description = self.__get_text()
             elif self.tag == 'FILE':
-                memorie.url = self.data
+                memorie.url = self.__get_text()
         self.flag = True
         return memorie
 
@@ -296,7 +296,7 @@ class Gedcom:
         ordinance = Ordinance()
         while self.__get_line() and self.level > 1:
             if self.tag == 'DATE':
-                ordinance.date = self.data
+                ordinance.date = self.__get_text()
             elif self.tag == 'TEMP':
                 ordinance.temple_code = self.data
             elif self.tag == 'STAT':
