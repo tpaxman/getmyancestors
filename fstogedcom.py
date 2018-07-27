@@ -388,7 +388,8 @@ class Download(Frame):
         self.title.config(text=_('Options'))
         cache.delete('lang')
         cache.add('lang', self.fs.lang)
-        self.options = Options(self.form, True)
+        lds_account = self.fs.get_url('/platform/tree/persons/%s/ordinances.json' % self.fs.get_userid()) != 'error'
+        self.options = Options(self.form, lds_account)
         self.info('')
         self.sign_in.destroy()
         self.options.pack()
