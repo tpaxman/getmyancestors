@@ -214,8 +214,8 @@ class Session:
                 continue
             try:
                 return r.json()
-            except:
-                self.write_log('WARNING: corrupted file from ' + url)
+            except Exception as e:
+                self.write_log('WARNING: corrupted file from %s, error: %s' % (url, e))
                 return None
 
     # retrieve FamilySearch current user ID
@@ -361,7 +361,7 @@ class Memorie:
     def __init__(self, data=None):
         self.description = self.url = None
         if data and 'links' in data:
-            self.url = data['links']['alternate'][0]['href']
+            self.url = data['links']['image']['href']
             if 'titles' in data:
                 self.description = data['titles'][0]['value']
             if 'descriptions' in data:
@@ -508,7 +508,8 @@ class Indi:
                 memorie = self.tree.fs.get_url(url)
                 if memorie and 'sourceDescriptions' in memorie:
                     for x in memorie['sourceDescriptions']:
-                        self.memories.add(Memorie(x))
+                        if x['mediaType'] in ('image/jpeg', 'image/png'):
+                            self.memories.add(Memorie(x))
 
     # add a fams to the individual
     def add_fams(self, fams):
