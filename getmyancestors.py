@@ -361,7 +361,7 @@ class Memorie:
     def __init__(self, data=None):
         self.description = self.url = None
         if data and 'links' in data:
-            self.url = data['links']['image']['href']
+            self.url = data['about']
             if 'titles' in data:
                 self.description = data['titles'][0]['value']
             if 'descriptions' in data:
@@ -508,7 +508,10 @@ class Indi:
                 memorie = self.tree.fs.get_url(url)
                 if memorie and 'sourceDescriptions' in memorie:
                     for x in memorie['sourceDescriptions']:
-                        if x['mediaType'] in ('image/jpeg', 'image/png'):
+                        if x['mediaType'] == 'text/plain':
+                            text = '\n'.join(val.get('value', '') for val in x.get('titles', []) + x.get('descriptions', []))
+                            self.notes.add(Note(text, self.tree))
+                        else:
                             self.memories.add(Memorie(x))
 
     # add a fams to the individual
