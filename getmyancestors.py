@@ -558,9 +558,10 @@ class Indi:
     def get_contributors(self):
         temp = set()
         data = self.tree.fs.get_url('/platform/tree/persons/%s/changes.json' % self.fid)
-        for entries in data['entries']:
-            for contributors in entries['contributors']:
-                temp.add(contributors['name'])
+        if data:
+            for entries in data['entries']:
+                for contributors in entries['contributors']:
+                    temp.add(contributors['name'])
         if temp:
             text = '=== ' + self.tree.fs._('Contributors') + ' ===\n' + '\n'.join(sorted(temp))
             for n in self.tree.notes:
@@ -678,9 +679,10 @@ class Fam:
         if self.fid:
             temp = set()
             data = self.tree.fs.get_url('/platform/tree/couple-relationships/%s/changes.json' % self.fid)
-            for entries in data['entries']:
-                for contributors in entries['contributors']:
-                    temp.add(contributors['name'])
+            if data:
+                for entries in data['entries']:
+                    for contributors in entries['contributors']:
+                        temp.add(contributors['name'])
             if temp:
                 text = '=== ' + self.tree.fs._('Contributors') + ' ===\n' + '\n'.join(sorted(temp))
                 for n in self.tree.notes:
