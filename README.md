@@ -9,11 +9,11 @@ This script requires python3 and the requests module to work. To install this mo
 
 This script requires python 3.4 (or higher) to run due to some novel features in the argparse and asyncio modules (https://docs.python.org/3/whatsnew/3.4.html)
 
-The graphical interface requires the tkinter module (https://docs.python.org/3/library/tkinter.html)
+The graphical interface requires tkinter (https://docs.python.org/3/library/tkinter.html) and diskcache.
 
 To download the script, click on the green button "Clone or download" on the top of this page and then click on "Download ZIP".
 
-Current version was updated on May 21th 2018.
+Current version was updated on November 11th 2018.
 
 
 How to use
