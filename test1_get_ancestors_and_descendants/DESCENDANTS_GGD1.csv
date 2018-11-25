@@ -1,0 +1,15 @@
+"OXG_ID_INDIVIDU","OXG_ID_FATHER","OXG_ID_MOTHER","OXG_ID_PATRONYME","OXG_SOSA","OXG_GIVNAME","OXG_Sex","OXG_BIRTH_DATE","OXG_BIRTH_PLACE","OXG_DEATH_DATE","OXG_DEATH_PLACE","OXG_EVENT_DATE","OXG_EVENT_PLACE","OXG_MILITARY_DATE","OXG_MILITARY_PLACE","OXG_MARRIAGE_DATE","OXG_MARRIAGE_PLACE","OXG_DIVORCE_DATE","OXG_DIVORCE_PLACE","OXG_PARTNER","OXG_Date_(null)","OXG_Place_(null)","OXG_Note"
+"0",,,"","24","jylerggd1","0","1900",,"1950",,,,,,,,,,"3"
+"1","0","3","Brown","12","Yob","0","1910","Canada,Alberta,Calgary,Calgary, Alberta, Canada","1990","Canada,Alberta,Calgary,Calgary, Alberta, Canada",,,,,,,,,"5"
+"2","0","3","",,"boogerboy","0","1930",,"1950",,,,,,,,,,"7"
+"3",,,"","25","jylerggm1","1","1900",,"1950",,,,,,,,,,"0"
+"4","2","7",,,"boogerboys_son","0","1929",,"1979",,,,,,,,,,,,
+"5",,,"Yellow","13","Tob","1","1910","Canada,Alberta,Calgary,Calgary, Alberta, Canada","1990","United States of America,Michigan,Wayne,Edmond Island, Wayne, Michigan, United States",,,,,,,,,"1"
+"6","1","5","Brown","6","Sob","0","1939","Canada,Alberta,Calgary,Calgary, Alberta, Canada",,,,,,,,,,,"9"
+"7",,,"",,"boogerboys_wife","1","1920",,"1950",,,,,,,,,,"2"
+"8","6","9","Brown","3","Dob","1","1962","Canada,Alberta,Calgary,Calgary, Alberta, Canada",,,,,,,,,,,"11"
+"9",,,"Red","7","Cob","1","1940","Canada,Alberta,Calgary,Calgary, Alberta, Canada",,,,,,,,,,,"6"
+"10","11","8",Ursenpax,,"Jyler","0","08/01/1998",,,,,,,,,,,,,,
+"11",,,"Ursenpax","2","Rob","0","1960","Canada,Alberta,Calgary,Calgary, Alberta, Canada",,,,,,,,,,,"8"
+"12","11","8",,"1","jylerBro1","0","2000",,,,,,,,,,,,,,
+"13","11","8",,,"jylerbro2","0","2002",,,,,,,,,,,,,,
