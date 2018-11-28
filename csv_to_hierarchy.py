@@ -31,52 +31,37 @@ df = pd.read_csv('./test3_familytreebeard/descend_familytreebeard.csv')
 df = df[list(keep_dict.keys())]
 df.rename(columns=keep_dict,inplace=True)
 
-
-# In[ ]:
-
-
-df.head()
-
-
-# Find oldest couple of the set
-
-# In[ ]:
-
-
-np.isnan([float('nan'), 2, 3, 4]).any()
-
-
-# In[ ]:
-
-
-for index, row in df.iterrows():
-    if np.isnan([row.father, row.mother, ])
-    if np.isnan(row.father) & np.isnan()
-
-
-# In[ ]:
-
-
-for person in df.person:
-    mother = df.loc[df.person==person,'mother'].values[0]
-    father = df.loc[df.person==person,'father'].values[0]
-    spouse = df.loc[df.person==person,'spouse'].values[0]
-    spousemother = df.loc[df.person==spouse, 'mother'].values[0]
-    spousefather = df.loc[df.person==spouse, 'father'].values[0]
-    print(mother,father,spouse,spousemother,spousefather)
-
-
-# In[ ]:
-
-
-df.reset_index(inplace=True)
 df.set_index('person',inplace=True)
 
+"""for index, row in df.iterrows():
+    person = index
+    father = row.father
+    mother = row.mother
+    spouse = row.spouse
+    spousemother = df.mother[spouse]
+    spousefather = df.father[spouse]
+    print(person,father,mother,spouse,spousemother,spousefather)
+    """
+
+#np.isnan([float('nan'), 2, 3, 4]).any()
+
+def find_origin_couple(df):
+    people_with_no_parents = df[np.isnan(df.mother) & np.isnan(df.father)].index
+    for person in people_with_no_parents:
+        spouse = df.spouse[person]
+        spousemother = df.mother[spouse]
+        spousefather = df.father[spouse]
+        if np.isnan([spousemother,spousefather]).all():
+            origin_couple = (int(person),int(spouse))
+            break
+    return origin_couple
+    
+
 
 # In[ ]:
 
 
-df
+find_origin_couple(df)
 
 
 # In[ ]:
