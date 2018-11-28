@@ -6,7 +6,7 @@ cd Documents\FAMILY_HISTORY_GIT\getmyancestors\
 
 
 # GET ALL DESCENDANTS OF JYLERGGD1:
-python getmyancestors.py -u ursenpax -p Python123 -i GM8X-LPK -d 99 -a 0 -o output_jylerggd1_descendants.ged
+python getmyancestors.py -u ursenpax -p Python123 -i GM8X-LPK -d 99 -a 0 -o DESCENDANTS_GGD1.ged -l DESCENDANTS_GGD1.log -v
 
 # GET ALL ANCESTORS OF JYLER PAXMAN (PLUS VERBOSE LOG):
-python getmyancestors.py -a 6 -u ursenpax -p Python123 -i GM89-JFZ -o ancestors_gen0.ged -l ancestors_gen0.log -v
+python getmyancestors.py -u ursenpax -p Python123 -i GM89-JFZ -a 6 -o ANCESTORS_GEN0.ged -l ANCESTORS_GEN0.log -v

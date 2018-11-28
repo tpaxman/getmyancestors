@@ -1,0 +1,21 @@
+"OXG_ID_INDIVIDU","OXG_ID_FATHER","OXG_ID_MOTHER","OXG_ID_PATRONYME","OXG_SOSA","OXG_GIVNAME","OXG_Sex","OXG_BIRTH_DATE","OXG_BIRTH_PLACE","OXG_DEATH_DATE","OXG_DEATH_PLACE","OXG_EVENT_DATE","OXG_EVENT_PLACE","OXG_MILITARY_DATE","OXG_MILITARY_PLACE","OXG_MARRIAGE_DATE","OXG_MARRIAGE_PLACE","OXG_DIVORCE_DATE","OXG_DIVORCE_PLACE","OXG_PARTNER","OXG_Date_Title","OXG_Place_Title","OXG_Date_(null)","OXG_Place_(null)","OXG_Note"
+"0",,,"","24","jylerggd1","0","1900",,"1950",,,,,,,,,,"1"
+"1",,,"","25","jylerggm1","1","1900",,"1950",,,,,,,,,,"0"
+"2","0","1","Brown","12","Yob","0","1910","Canada,Alberta,Calgary,Calgary, Alberta, Canada","1990","Canada,Alberta,Calgary,Calgary, Alberta, Canada",,,,,,,,,"6"
+"3","0","1","Sheep",,"Black","1","1940",,,,,,,,,,,,"7"
+"4","0","1","",,"boogerboy","0","1930",,"1950",,,,,,,,,,"13"
+"5","4","13",,,"boogerboys_son","0","1929",,"1979",,,,,,,,,,,,,,
+"6",,,"Yellow","13","Tob","1","1910","Canada,Alberta,Calgary,Calgary, Alberta, Canada","1990","United States of America,Michigan,Wayne,Edmond Island, Wayne, Michigan, United States",,,,,,,,,"2"
+"7",,,"Man",,"Spaghetti","0","1938",,,,,,,,,,,,"3"
+"8","7","3",Man,,"Fettuccine","0","1975",,,,,,,,,,,,,,,,
+"9","7","3",Man,,"Spaghettini","0","1972",,,,,,,,,,,,,,,,
+"10","2","6","Brown","6","Sob","0","1939","Canada,Alberta,Calgary,Calgary, Alberta, Canada",,,,,,,,,,,"14"
+"11","2","6",Brown,,"Smokey Robinson","0","1960",,"2010",,,,,,,,,,,,,,
+"12","7","3",Man,,"Linguini Wo","1","1970",,"1990",,,,,,,,,,,,,,
+"13",,,"",,"boogerboys_wife","1","1920",,"1950",,,,,,,,,,"4"
+"14",,,"Red","7","Cob","1","1940","Canada,Alberta,Calgary,Calgary, Alberta, Canada",,,,,,,,,,,"10"
+"15","10","14","Brown","3","Dob","1","1962","Canada,Alberta,Calgary,Calgary, Alberta, Canada",,,,,,,,,,,"18"
+"16","18","15",Ursenpax,,"Jyler","0","08/01/1998",,,,,,,,,,,,,,,,
+"17","18","15",,"1","jylerBro1","0","2000",,,,,,,,,,,,,,,,
+"18",,,"Ursenpax","2","Rob","0","1960","Canada,Alberta,Calgary,Calgary, Alberta, Canada",,,,,,,,,,,"15"
+"19","18","15",,,"jylerbro2","0","2002",,,,,,,,,,,,,,,,
