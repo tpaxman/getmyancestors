@@ -30,6 +30,7 @@ keep_dict = {
 df = pd.read_csv('./test3_familytreebeard/descend_familytreebeard.csv')
 df = df[list(keep_dict.keys())]
 df.rename(columns=keep_dict,inplace=True)
+df['sex'].replace({0:'male',1:'female'}, inplace=True)
 
 df.set_index('person',inplace=True)
 
@@ -52,10 +53,136 @@ def find_origin_couple(df):
         spousemother = df.mother[spouse]
         spousefather = df.father[spouse]
         if np.isnan([spousemother,spousefather]).all():
-            origin_couple = (int(person),int(spouse))
+            if df.sex[person]=='male':
+                origin_couple = {'male':person, 'female':spouse}
+            elif df.sex[person=='female']:
+                origin_couple = {'male':spouse, 'female':person}
             break
     return origin_couple
     
+
+
+# In[ ]:
+
+
+def find_children(df,father,mother):
+    print(df.mother, df.father)
+    
+find_children(df,0,4)
+    
+
+
+# In[ ]:
+
+
+class GedcomDF(pd.DataFrame):
+    def  __init__(self, filename):
+        self = pd.read_csv(filename)
+
+
+# In[ ]:
+
+
+class Ged():
+    def  __init__(self, filename):
+        self.df = pd.read_csv(filename)
+
+
+# In[ ]:
+
+
+X = Ged('./test3_familytreebeard/descend_familytreebeard.csv')
+
+
+# In[ ]:
+
+
+X.df
+
+
+# In[ ]:
+
+
+def mmm():
+    a = 2
+    b = 3
+    def h(k):
+        return k*b
+    return h(a)
+
+    
+
+
+# In[ ]:
+
+
+mmm()
+
+
+# # SCRAP
+
+# In[ ]:
+
+
+def find_mother(df,person):
+    return df.mother[person]
+
+
+# In[ ]:
+
+
+x=[]
+for person, row in df.iterrows():
+    spouse = row.spouse
+    spouseparent = df[parenttype]
+    if spousetype == 'mother':
+        spouseparent = df.mother[spouse]
+    elif spousetype == 'father':
+        spouseparent = df.mother[spouse]
+    x.append(spouseparent)
+
+
+# In[ ]:
+
+
+person = 6
+row = df.loc[person,:]
+print(row)
+
+
+# In[ ]:
+
+
+df_parentless = df[np.isnan(df.mother) & np.isnan(df.father)]
+persons_parentless = df_parentless.index
+spouses_parentless = df_parentless.spouse
+#df_parentless.loc[spouses_parentless]
+
+a = df_parentless.index
+b = df_parentless.spouse
+for index, row in df_parentless.iterrows():
+    print(index in b.values)
+
+
+# In[ ]:
+
+
+df_people_noparents = df[np.isnan(df.mother) & np.isnan(df.father)]
+#df_people_noparents_spouses
+
+
+# In[ ]:
+
+
+df_people_noparents
+
+
+# In[ ]:
+
+
+p = find_origin_couple(df)
+(df.father==p['male']) & (df.mother==p['female'])
+#df[df.father==p[1] & df.mother==p[0]]
 
 
 # In[ ]:
