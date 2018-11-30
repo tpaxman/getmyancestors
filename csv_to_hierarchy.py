@@ -6,6 +6,7 @@
 
 import pandas as pd
 import numpy as np
+import datetime as dt
 
 
 # # CLASS
@@ -23,6 +24,7 @@ class OxyGen(pd.DataFrame):
         'OXG_PARTNER'      : 'spouse',
         'OXG_ID_PATRONYME' : 'surname',
         'OXG_GIVNAME'      : 'firstname',
+        'OXG_BIRTH_DATE'   : 'birthday', 
         'OXG_Sex'          : 'sex',
         }
         SEX_DICT = {0:'male',1:'female'}
@@ -42,35 +44,35 @@ class OxyGen(pd.DataFrame):
             spousefather = df.father[spouse]
             if np.isnan([spousemother,spousefather]).all():
                 if df.sex[person]=='male':
-                    origin_couple = {'male':person, 'female':spouse}
+                    origin_couple = {'father':person, 'mother':spouse}
                 elif df.sex[person=='female']:
-                    origin_couple = {'male':spouse, 'female':person}
+                    origin_couple = {'father':spouse, 'mother':person}
                 break
         return origin_couple
     
     def find_children(self,father=None,mother=None):
         df = self
-        
         father_slicer = (df.father==father) if father!=None else True
         mother_slicer = (df.mother==mother) if mother!=None else True
-        
-        df_bool = father_slicer & mother_slicer    
-        
-        """if (father != None) & (mother != None):
-            df_bool = (df.father==father) & (df.mother==mother)
-        elif (father != None) & (mother == None):
-            df_bool = (df.father==father)
-        elif (father == None) & (mother != None):
-            df_bool = (df.mother==mother)
-        elif (father == None) & (mother == None):
-            df_bool = (df.mother==mother)"""
-        children = df[df_bool].index.tolist()
+        children = df[father_slicer & mother_slicer].sort_values(by=['birthday']) # this part needs some work
         return children
 
     def find_spouse(self,person):
         df = self
-        spouse = df.spouse[person]
-        return spouse
+        spouse = df.loc[person,'spouse']
+        if np.isnan(spouse):
+            return None
+        else: 
+            return spouse.astype(int)
+    
+    def find_children_and_spouses(self,father=None,mother=None):
+        children = self.find_children(father,mother)
+        spouses = self.find_spouse(children)
+        children_and_spouse_tup = tuple(zip(spouses.index,spouses))
+        return children_and_spouse_tup
+    
+    def assign_generation_to_person(self,person):
+        x
 
 
 # # TESTS
@@ -85,7 +87,64 @@ og = OxyGen(TEST_FILE)
 # In[ ]:
 
 
-og.find_children(0,4)
+BRANCH_NAME_ORDER = 'abcdefghijklmnopqqrstuvwxyz'
+
+
+# In[ ]:
+
+
+og['branch']=''
+og['gen']=''
+
+orig_couple = og.find_origin_couple()
+
+father = orig_couple['father']
+mother = orig_couple['mother']
+children = og.find_children(father=father,mother=mother)
+for index, person in enumerate(children.index):
+    spouse = og.spouse[person]
+    father = og.father[person]
+    mother = og.mother[person]
+    couple_branch = og.branch[father] + BRANCH_NAME_ORDER[index]
+    og.loc[person,'branch'] = couple_branch
+    og.loc[spouse,'branch'] = couple_branch
+    
+    father = person if og.sex[person]=='male' else spouse
+    mother = og.spouse[father]
+    children = og.find_children(father=father,mother=mother)
+    for index, person in enumerate(children.index):
+        spouse = og.spouse[person]
+        father = og.father[person]
+        mother = og.mother[person]
+        couple_branch = og.branch[father] + BRANCH_NAME_ORDER[index]
+        og.loc[person,'branch'] = couple_branch
+        og.loc[spouse,'branch'] = couple_branch        
+
+
+# In[ ]:
+
+
+og
+
+
+# In[ ]:
+
+
+date(1988)
+
+
+# In[ ]:
+
+
+for person in children_1:
+    print(person in children_1)
+
+
+# In[ ]:
+
+
+BRANCH_NAME_ORDER = 'abcdefghijklmnopqrstuvwxyz'
+dict(zip(range(0, len(BRANCH_NAME_ORDER)), BRANCH_NAME_ORDER))
 
 
 # In[ ]:
@@ -108,29 +167,6 @@ def find_children(df,father=None,mother=None):
     
     
     return children
-
-
-# In[ ]:
-
-
-father = 0
-mother = 4
-
-
-
-df[(df.father==father) | (df.mother==mother)].index.tolist()
-
-
-# In[ ]:
-
-
-og.find_children(father=2,mother=4)
-
-
-# In[ ]:
-
-
-find_children(og,0,4)
 
 
 # In[ ]:
