@@ -34,7 +34,7 @@ class OxyGen(pd.DataFrame):
         super().__init__(df)
         
     def find_origin_couple(self):
-        df = self.df
+        df = self
         people_with_no_parents = df[np.isnan(df.mother) & np.isnan(df.father)].index
         for person in people_with_no_parents:
             spouse = df.spouse[person]
@@ -49,27 +49,28 @@ class OxyGen(pd.DataFrame):
         return origin_couple
     
     def find_children(self,father=None,mother=None):
-        df = self.df
+        df = self
         
-        children = df[(df.father==father) & (df.mother==mother)].index.tolist()
-        return self.convert_to_int(children)
+        father_slicer = (df.father==father) if father!=None else True
+        mother_slicer = (df.mother==mother) if mother!=None else True
+        
+        df_bool = father_slicer & mother_slicer    
+        
+        """if (father != None) & (mother != None):
+            df_bool = (df.father==father) & (df.mother==mother)
+        elif (father != None) & (mother == None):
+            df_bool = (df.father==father)
+        elif (father == None) & (mother != None):
+            df_bool = (df.mother==mother)
+        elif (father == None) & (mother == None):
+            df_bool = (df.mother==mother)"""
+        children = df[df_bool].index.tolist()
+        return children
 
     def find_spouse(self,person):
-        df = self.df
+        df = self
         spouse = df.spouse[person]
-        return self.convert_to_int(spouse)
-
-
-# In[ ]:
-
-
-dfx=OxyGen(TEST_FILE)
-
-
-# In[ ]:
-
-
-dfx[dfx.father==dfx.father]
+        return spouse
 
 
 # # TESTS
@@ -79,6 +80,57 @@ dfx[dfx.father==dfx.father]
 
 TEST_FILE = './test3_familytreebeard/descend_familytreebeard.csv'
 og = OxyGen(TEST_FILE)
+
+
+# In[ ]:
+
+
+og.find_children(0,4)
+
+
+# In[ ]:
+
+
+def find_children(df,father=None,mother=None):
+    #father_bool = df.father==father if father==none
+    
+    father_arg = (father!=None)
+    mother_arg = (mother!=None)
+    
+    if (father != None) & (mother != None):
+        children = df[(df.father==father) & (df.mother==mother)].index.tolist()
+    elif (father != None) & (mother == None):
+        children = df[(df.father==father)].index.tolist()
+    elif (father == None) & (mother != None):
+        children = df[(df.mother==mother)].index.tolist()
+    elif (father == None) & (mother == None):
+        children = []
+    
+    
+    return children
+
+
+# In[ ]:
+
+
+father = 0
+mother = 4
+
+
+
+df[(df.father==father) | (df.mother==mother)].index.tolist()
+
+
+# In[ ]:
+
+
+og.find_children(father=2,mother=4)
+
+
+# In[ ]:
+
+
+find_children(og,0,4)
 
 
 # In[ ]:
