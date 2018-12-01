@@ -34,6 +34,13 @@ class OxyGen(pd.DataFrame):
         df['sex'].replace(SEX_DICT, inplace=True)
         df.set_index('person',inplace=True)
         super().__init__(df)
+
+    def is_couple(self,person1,person2):
+        df = self
+        if df.spouse[person1] == person2:
+            return True
+        else:
+            return False
         
     def find_origin_couple(self):
         df = self
@@ -50,20 +57,44 @@ class OxyGen(pd.DataFrame):
                 break
         return origin_couple
     
-    def find_children(self,father=None,mother=None):
+    def find_children(self, *args):
         df = self
-        father_slicer = (df.father==father) if father!=None else True
-        mother_slicer = (df.mother==mother) if mother!=None else True
-        children = df[father_slicer & mother_slicer].sort_values(by=['birthday']) # this part needs some work
-        return children
+        parents = args
+        num_parents = len(parents)
+        assert (num_parents <= 2), 'too many parent inputs (1 or 2 only)'
+        assert (num_parents > 0), 'not enough parent inputs'
+        if num_parents == 2:
+            parent1 = parents[0]
+            parent2 = parents[1]
+            assert self.is_couple(parent1,parent2), 'not a couple'
+            if df.sex[parent1]=='male':
+                father = parent1
+                mother = parent2
+            else:
+                mother = parent1
+                father = parent2
+            father_slicer = (df.father==father)
+            mother_slicer = (df.mother==mother)
+            children_row = df[father_slicer & mother_slicer].sort_values(by=['birthday'])
+        elif num_parents == 1:
+            parent = parents[0]
+            if df.sex[parent]=='male':
+                children_row = df[df.father==parent]
+            else:
+                children_row = df[df.mother==parent]
+        children_row = children_row.sort_values(by=['birthday'])    
+        return children_row
 
     def find_spouse(self,person):
         df = self
         spouse = df.loc[person,'spouse']
-        if np.isnan(spouse):
+        spouse_row = df[df.index == spouse]
+        return spouse_row
+        
+        """if np.isnan(spouse):
             return None
         else: 
-            return spouse.astype(int)
+            return spouse.astype(int)"""
     
     def find_children_and_spouses(self,father=None,mother=None):
         children = self.find_children(father,mother)
@@ -73,6 +104,9 @@ class OxyGen(pd.DataFrame):
     
     def assign_generation_to_person(self,person):
         x
+        
+TEST_FILE = './test3_familytreebeard/descend_familytreebeard.csv'
+og = OxyGen(TEST_FILE)
 
 
 # # TESTS
@@ -80,14 +114,108 @@ class OxyGen(pd.DataFrame):
 # In[ ]:
 
 
-TEST_FILE = './test3_familytreebeard/descend_familytreebeard.csv'
-og = OxyGen(TEST_FILE)
+og
 
 
 # In[ ]:
 
 
-BRANCH_NAME_ORDER = 'abcdefghijklmnopqqrstuvwxyz'
+for person, row in og.iterrows():
+    og.loc[person,'children'] = [[tuple(og.find_children(person).index)]]
+    
+
+
+# In[ ]:
+
+
+"""og['branch']=''
+og['gen']=''
+
+orig_couple = og.find_origin_couple()
+father = orig_couple['father']
+mother = orig_couple['mother']
+children = og.find_children(father=father,mother=mother)"""
+
+def print_branch_name(og,person,childnum):
+    print(og.firstname[person],og.surname[person])
+    spouse = og.find_spouse(person).index
+    if not np.isnan(spouse):
+        children = og.find_children.index
+        if not children.empty:
+            print_branch_name()
+    else:
+        break
+    
+children = og.find_children(0,4)
+for index, person in enumerate(children.index):
+    print_branch_name(og,person,index)
+
+
+# In[ ]:
+
+
+def print_branch_name(og,children):
+    if not children.empty:
+        for index, person in enumerate(children):
+            print(og.firstname[person],og.surname[person])
+            spouse_row = og.find_spouse(person)
+            if not spouse_row.empty:
+                spouse = spouse_row.index[0]
+                children = og.find_children(person,spouse).index
+                print_branch_name(og,children)
+
+children = og.find_children(0,4).index
+print_branch_name(og,children)
+
+
+# In[ ]:
+
+
+children = og.find_children(0,4).index
+for index, person in enumerate(children):
+    print(og.firstname[person],og.surname[person])
+
+
+# In[ ]:
+
+
+x=og.find_spouse(1).index[0]
+og.find_children(1,x)
+
+
+# In[ ]:
+
+
+og.find_children().index.empty
+
+
+# In[ ]:
+
+
+def add_branch_name(og, person):
+    spouse = og.spouse[person]
+    father = og.father[person]
+    mother = og.mother[person]
+    couple_branch = og.branch[father] + BRANCH_NAME_ORDER[index]
+    og.loc[person,'branch'] = couple_branch
+    og.loc[spouse,'branch'] = couple_branch
+    
+    og = add_branch_name(og, new_father, new_mother)
+    
+    if children.empty:
+        return og
+    else:
+        for index, person in enumerate(children.index):
+            spouse = og.spouse[person]
+            father = og.father[person]
+            mother = og.mother[person]
+            couple_branch = og.branch[father] + BRANCH_NAME_ORDER[index]
+            og.loc[person,'branch'] = couple_branch
+            og.loc[spouse,'branch'] = couple_branch
+            new_father = person if og.sex[person]=='male' else spouse
+            new_mother = og.spouse[new_father]
+            og = add_branch_name(og, new_father, new_mother)
+            return og
 
 
 # In[ ]:
@@ -95,12 +223,13 @@ BRANCH_NAME_ORDER = 'abcdefghijklmnopqqrstuvwxyz'
 
 og['branch']=''
 og['gen']=''
+BRANCH_NAME_ORDER = 'abcdefghijklmnopqqrstuvwxyz'
 
 orig_couple = og.find_origin_couple()
-
 father = orig_couple['father']
 mother = orig_couple['mother']
-children = og.find_children(father=father,mother=mother)
+children = og.find_children(father,mother)
+
 for index, person in enumerate(children.index):
     spouse = og.spouse[person]
     father = og.father[person]
@@ -111,6 +240,71 @@ for index, person in enumerate(children.index):
     
     father = person if og.sex[person]=='male' else spouse
     mother = og.spouse[father]
+    print(og.firstname[father],og.firstname[mother])
+    children = og.find_children(father,mother)
+    for index, person in enumerate(children.index):
+        spouse = og.spouse[person]
+        father = og.father[person]
+        mother = og.mother[person]
+        couple_branch = og.branch[father] + BRANCH_NAME_ORDER[index]
+        og.loc[person,'branch'] = couple_branch
+        og.loc[spouse,'branch'] = couple_branch
+        
+        father = person if og.sex[person]=='male' else spouse
+        mother = og.spouse[father]
+        print(og.firstname[father],og.firstname[mother])
+        children = og.find_children(father,mother)
+        for index, person in enumerate(children.index):
+            spouse = og.spouse[person]
+            father = og.father[person]
+            mother = og.mother[person]
+            couple_branch = og.branch[father] + BRANCH_NAME_ORDER[index]
+            og.loc[person,'branch'] = couple_branch
+            og.loc[spouse,'branch'] = couple_branch
+            
+og
+
+
+# In[ ]:
+
+
+og['branch']=''
+og['gen']=''
+
+orig_couple = og.find_origin_couple()
+father = orig_couple['father']
+mother = orig_couple['mother']
+children = og.find_children(father=father,mother=mother)
+
+def add_branch_names(og, children):
+    if children.empty:
+        return og
+    else:
+        for index, person in enumerate(children.index):
+            spouse = og.spouse[person]
+            father = og.father[person]
+            mother = og.mother[person]
+            couple_branch = og.branch[father] + BRANCH_NAME_ORDER[index]
+            og.loc[person,'branch'] = couple_branch
+            og.loc[spouse,'branch'] = couple_branch
+            new_father = person if og.sex[person]=='male' else spouse
+            new_mother = og.spouse[new_father]
+            og = add_branch_name(og, new_father, new_mother)
+            return og
+    
+""" father = person if og.sex[person]=='male' else spouse
+mother = og.spouse[father]
+children = og.find_children(father=father,mother=mother)
+for index, person in enumerate(children.index):
+    spouse = og.spouse[person]
+    father = og.father[person]
+    mother = og.mother[person]
+    couple_branch = og.branch[father] + BRANCH_NAME_ORDER[index]
+    og.loc[person,'branch'] = couple_branch
+    og.loc[spouse,'branch'] = couple_branch
+
+    father = person if og.sex[person]=='male' else spouse
+    mother = og.spouse[father]
     children = og.find_children(father=father,mother=mother)
     for index, person in enumerate(children.index):
         spouse = og.spouse[person]
@@ -118,13 +312,13 @@ for index, person in enumerate(children.index):
         mother = og.mother[person]
         couple_branch = og.branch[father] + BRANCH_NAME_ORDER[index]
         og.loc[person,'branch'] = couple_branch
-        og.loc[spouse,'branch'] = couple_branch        
+        og.loc[spouse,'branch'] = couple_branch       """ 
 
 
 # In[ ]:
 
 
-og
+og = add_branch_name(og,0,4)
 
 
 # In[ ]:
