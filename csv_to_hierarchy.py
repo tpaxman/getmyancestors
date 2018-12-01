@@ -16,7 +16,7 @@ import datetime as dt
 
 class OxyGen(pd.DataFrame):
     
-    def  __init__(self, filename):
+    def  __init__(self, filename, change_headers=True):
         KEEP_DICT = {
         'OXG_ID_INDIVIDU'  : 'person',
         'OXG_ID_FATHER'    : 'father',
@@ -29,8 +29,10 @@ class OxyGen(pd.DataFrame):
         }
         SEX_DICT = {0:'male',1:'female'}
         df = pd.read_csv(filename)
-        df = df[list(KEEP_DICT.keys())]
-        df.rename(columns=KEEP_DICT,inplace=True)
+        
+        if change_headers==True:
+            df = df[list(KEEP_DICT.keys())]
+            df.rename(columns=KEEP_DICT,inplace=True)
         df['sex'].replace(SEX_DICT, inplace=True)
         df.set_index('person',inplace=True)
         super().__init__(df)
@@ -105,17 +107,12 @@ class OxyGen(pd.DataFrame):
     def assign_generation_to_person(self,person):
         x
         
-TEST_FILE = './test3_familytreebeard/descend_familytreebeard.csv'
-og = OxyGen(TEST_FILE)
+#TEST_FILE = './test3_familytreebeard/descend_familytreebeard.csv'
+#og = OxyGen('./test3_familytreebeard/descend_familytreebeard.csv')
+og = OxyGen('./test4_ursenbach_actual_family/nana_and_grandad_descendants.csv',change_headers=False)
 
 
 # # TESTS
-
-# In[ ]:
-
-
-og
-
 
 # In[ ]:
 
@@ -154,18 +151,31 @@ for index, person in enumerate(children.index):
 # In[ ]:
 
 
-def print_branch_name(og,children):
+def print_branch_name(og,children,current_gen=0):
     if not children.empty:
+        current_gen += 1
+        gen_marker = '#' * (current_gen+1)
         for index, person in enumerate(children):
-            print(og.firstname[person],og.surname[person])
             spouse_row = og.find_spouse(person)
             if not spouse_row.empty:
                 spouse = spouse_row.index[0]
+                print(gen_marker, og.firstname[person],og.surname[person],'/',
+                      og.firstname[spouse],og.surname[spouse])
                 children = og.find_children(person,spouse).index
-                print_branch_name(og,children)
+                print_branch_name(og,children,current_gen)
+            else:
+                print(gen_marker, og.firstname[person],og.surname[person])
 
-children = og.find_children(0,4).index
-print_branch_name(og,children)
+
+origin_couple = og.find_origin_couple()
+mom = origin_couple['mother']
+dad = origin_couple['father']
+current_gen=0
+gen_marker = '#' * (current_gen+1)
+print(gen_marker, og.firstname[dad],og.surname[dad],'/',
+      og.firstname[mom],og.surname[mom])
+children = og.find_children(mom,dad).index
+print_branch_name(og,children,current_gen)
 
 
 # In[ ]:
