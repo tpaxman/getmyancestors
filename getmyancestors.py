@@ -882,42 +882,10 @@ class Tree:
             n.print(file)
         file.write('0 TRLR\n')
 
-def main(optional_args=None):
-    parser = argparse.ArgumentParser(description='Retrieve GEDCOM data from FamilySearch Tree (4 Jul 2016)', add_help=False, usage='getmyancestors.py -u username -p password [options]')
-    parser.add_argument('-u', metavar='<STR>', type=str, help='FamilySearch username')
-    parser.add_argument('-p', metavar='<STR>', type=str, help='FamilySearch password')
-    parser.add_argument('-i', metavar='<STR>', nargs='+', type=str, help='List of individual FamilySearch IDs for whom to retrieve ancestors')
-    parser.add_argument('-a', metavar='<INT>', type=int, default=4, help='Number of generations to ascend [4]')
-    parser.add_argument('-d', metavar='<INT>', type=int, default=0, help='Number of generations to descend [0]')
-    parser.add_argument('-m', action="store_true", default=False, help='Add spouses and couples information [False]')
-    parser.add_argument('-r', action="store_true", default=False, help='Add list of contributors in notes [False]')
-    parser.add_argument('-c', action="store_true", default=False, help='Add LDS ordinances (need LDS account) [False]')
-    parser.add_argument("-v", action="store_true", default=False, help="Increase output verbosity [False]")
-    parser.add_argument('-t', metavar='<INT>', type=int, default=60, help='Timeout in seconds [60]')
-    try:
-        parser.add_argument('-o', metavar='<FILE>', type=argparse.FileType('w', encoding='UTF-8'), default=sys.stdout, help='output GEDCOM file [stdout]')
-        parser.add_argument('-l', metavar='<FILE>', type=argparse.FileType('w', encoding='UTF-8'), default=sys.stderr, help='output log file [stderr]')
-    except TypeError:
-        sys.stderr.write('Python >= 3.4 is required to run this script\n')
-        sys.stderr.write('(see https://docs.python.org/3/whatsnew/3.4.html#argparse)\n')
-        exit(2)
 
-    # extract arguments from the command line
-    try:
-        parser.error = parser.exit
-        args = parser.parse_args(optional_args)
-    except SystemExit:
-        parser.print_help()
-        exit(2)
-        
-    def convert_arg_to_variable(args,var_name):
-        args_dict = vars(args)
-        try:
-            return args_dict[var_name]
-        except:
-            return None
-    
-    var_dict = vars(args)
+def print_gedcom(**kwargs):
+    """prints the Gedcom file based on the inputs"""
+    var_dict = kwargs
     
     if var_dict['i']:
         for fid in var_dict['i']:
@@ -997,6 +965,46 @@ def main(optional_args=None):
     tree.print(var_dict['o'])
     print(_('Downloaded %s individuals, %s families, %s sources and %s notes in %s seconds with %s HTTP requests.') % (str(len(tree.indi)), str(len(tree.fam)), str(len(tree.sources)), str(len(tree.notes)), str(round(time.time() - time_count)), str(fs.counter)))
         
+        
+def main(optional_args=None):
+    parser = argparse.ArgumentParser(description='Retrieve GEDCOM data from FamilySearch Tree (4 Jul 2016)', add_help=False, usage='getmyancestors.py -u username -p password [options]')
+    parser.add_argument('-u', metavar='<STR>', type=str, help='FamilySearch username')
+    parser.add_argument('-p', metavar='<STR>', type=str, help='FamilySearch password')
+    parser.add_argument('-i', metavar='<STR>', nargs='+', type=str, help='List of individual FamilySearch IDs for whom to retrieve ancestors')
+    parser.add_argument('-a', metavar='<INT>', type=int, default=4, help='Number of generations to ascend [4]')
+    parser.add_argument('-d', metavar='<INT>', type=int, default=0, help='Number of generations to descend [0]')
+    parser.add_argument('-m', action="store_true", default=False, help='Add spouses and couples information [False]')
+    parser.add_argument('-r', action="store_true", default=False, help='Add list of contributors in notes [False]')
+    parser.add_argument('-c', action="store_true", default=False, help='Add LDS ordinances (need LDS account) [False]')
+    parser.add_argument("-v", action="store_true", default=False, help="Increase output verbosity [False]")
+    parser.add_argument('-t', metavar='<INT>', type=int, default=60, help='Timeout in seconds [60]')
+    try:
+        parser.add_argument('-o', metavar='<FILE>', type=argparse.FileType('w', encoding='UTF-8'), default=sys.stdout, help='output GEDCOM file [stdout]')
+        parser.add_argument('-l', metavar='<FILE>', type=argparse.FileType('w', encoding='UTF-8'), default=sys.stderr, help='output log file [stderr]')
+    except TypeError:
+        sys.stderr.write('Python >= 3.4 is required to run this script\n')
+        sys.stderr.write('(see https://docs.python.org/3/whatsnew/3.4.html#argparse)\n')
+        exit(2)
+
+    # extract arguments from the command line
+    try:
+        parser.error = parser.exit
+        args = parser.parse_args(optional_args)
+    except SystemExit:
+        parser.print_help()
+        exit(2)
+        
+    def convert_arg_to_variable(args,var_name):
+        args_dict = vars(args)
+        try:
+            return args_dict[var_name]
+        except:
+            return None
+    
+    var_dict = vars(args)
+    
+    print_gedcom(**var_dict)
+            
 if __name__ == '__main__':
     main()
 
