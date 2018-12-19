@@ -882,7 +882,7 @@ class Tree:
             n.print(file)
         file.write('0 TRLR\n')
 
-def main():
+def main(optional_args=None):
     parser = argparse.ArgumentParser(description='Retrieve GEDCOM data from FamilySearch Tree (4 Jul 2016)', add_help=False, usage='getmyancestors.py -u username -p password [options]')
     parser.add_argument('-u', metavar='<STR>', type=str, help='FamilySearch username')
     parser.add_argument('-p', metavar='<STR>', type=str, help='FamilySearch password')
@@ -905,42 +905,51 @@ def main():
     # extract arguments from the command line
     try:
         parser.error = parser.exit
-        args = parser.parse_args()
+        args = parser.parse_args(optional_args)
     except SystemExit:
         parser.print_help()
         exit(2)
-
-    if args.i:
-        for fid in args.i:
+        
+    def convert_arg_to_variable(args,var_name):
+        args_dict = vars(args)
+        try:
+            return args_dict[var_name]
+        except:
+            return None
+    
+    var_dict = vars(args)
+    
+    if var_dict['i']:
+        for fid in var_dict['i']:
             if not re.match(r'[A-Z0-9]{4}-[A-Z0-9]{3}', fid):
                 exit('Invalid FamilySearch ID: ' + fid)
 
-    username = args.u if args.u else input("Enter FamilySearch username: ")
-    password = args.p if args.p else getpass.getpass("Enter FamilySearch password: ")
+    username = var_dict['u'] if var_dict['u'] else input("Enter FamilySearch username: ")
+    password = var_dict['p'] if var_dict['p'] else getpass.getpass("Enter FamilySearch password: ")
 
     time_count = time.time()
 
     # initialize a FamilySearch session and a family tree object
     print('Login to FamilySearch...')
-    fs = Session(username, password, args.v, args.l, args.t)
+    fs = Session(username, password, var_dict['v'], var_dict['l'], var_dict['t'])
     if not fs.logged:
         exit(2)
     _ = fs._
     tree = Tree(fs)
 
     # check LDS account
-    if args.c and fs.get_url('/platform/tree/persons/%s/ordinances.json' % fs.get_userid()) == 'error':
+    if var_dict['c'] and fs.get_url('/platform/tree/persons/%s/ordinances.json' % fs.get_userid()) == 'error':
         exit(2)
 
     # add list of starting individuals to the family tree
-    todo = args.i if args.i else [fs.get_userid()]
+    todo = var_dict['i'] if var_dict['i'] else [fs.get_userid()]
     print(_('Download starting individuals...'))
     tree.add_indis(todo)
 
     # download ancestors
     todo = set(todo)
     done = set()
-    for i in range(args.a):
+    for i in range(var_dict['a']):
         if not todo:
             break
         done |= todo
@@ -950,7 +959,7 @@ def main():
     # download descendants
     todo = set(tree.indi.keys())
     done = set()
-    for i in range(args.d):
+    for i in range(var_dict['d']):
         if not todo:
             break
         done |= todo
@@ -958,7 +967,7 @@ def main():
         todo = tree.add_children(todo) - done
 
     # download spouses
-    if args.m:
+    if var_dict['m']:
         print(_('Download spouses and marriage information...'))
         todo = set(tree.indi.keys())
         tree.add_spouses(todo)
@@ -968,24 +977,24 @@ def main():
         futures = set()
         for fid, indi in tree.indi.items():
             futures.add(loop.run_in_executor(None, indi.get_notes))
-            if args.c:
+            if var_dict['c']:
                 futures.add(loop.run_in_executor(None, tree.add_ordinances, fid))
-            if args.r:
+            if var_dict['r']:
                 futures.add(loop.run_in_executor(None, indi.get_contributors))
         for fam in tree.fam.values():
             futures.add(loop.run_in_executor(None, fam.get_notes))
-            if args.r:
+            if var_dict['r']:
                 futures.add(loop.run_in_executor(None, fam.get_contributors))
         for future in futures:
             await future
 
     loop = asyncio.get_event_loop()
-    print(_('Download notes') + (((',' if args.r else _(' and')) + _(' ordinances')) if args.c else '') + (_(' and contributors') if args.r else '') + '...')
+    print(_('Download notes') + (((',' if var_dict['r'] else _(' and')) + _(' ordinances')) if var_dict['c'] else '') + (_(' and contributors') if var_dict['r'] else '') + '...')
     loop.run_until_complete(download_stuff(loop))
 
     # compute number for family relationships and print GEDCOM file
     tree.reset_num()
-    tree.print(args.o)
+    tree.print(var_dict['o'])
     print(_('Downloaded %s individuals, %s families, %s sources and %s notes in %s seconds with %s HTTP requests.') % (str(len(tree.indi)), str(len(tree.fam)), str(len(tree.sources)), str(len(tree.notes)), str(round(time.time() - time_count)), str(fs.counter)))
         
 if __name__ == '__main__':
