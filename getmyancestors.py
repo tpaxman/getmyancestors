@@ -882,8 +882,7 @@ class Tree:
             n.print(file)
         file.write('0 TRLR\n')
 
-
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Retrieve GEDCOM data from FamilySearch Tree (4 Jul 2016)', add_help=False, usage='getmyancestors.py -u username -p password [options]')
     parser.add_argument('-u', metavar='<STR>', type=str, help='FamilySearch username')
     parser.add_argument('-p', metavar='<STR>', type=str, help='FamilySearch password')
@@ -988,3 +987,7 @@ if __name__ == '__main__':
     tree.reset_num()
     tree.print(args.o)
     print(_('Downloaded %s individuals, %s families, %s sources and %s notes in %s seconds with %s HTTP requests.') % (str(len(tree.indi)), str(len(tree.fam)), str(len(tree.sources)), str(len(tree.notes)), str(round(time.time() - time_count)), str(fs.counter)))
+        
+if __name__ == '__main__':
+    main()
+
