@@ -883,9 +883,23 @@ class Tree:
         file.write('0 TRLR\n')
 
 
-def print_gedcom(**kwargs):
+def print_gedcom_file(username, password, id_list, ancestors=4, descendants=0, marriages=False, contrib=False,
+                ordinances=False, verbosity=False, timeout_sec=60, output_file=sys.stdout, log_file=sys.stderr):
     """prints the Gedcom file based on the inputs"""
-    var_dict = kwargs
+    var_dict = {
+        'u': username,
+        'p': password,
+        'i': id_list,
+        'a': ancestors,
+        'd': descendants,
+        'm': marriages,
+        'r': contrib,
+        'c': ordinances,
+        'v': verbosity,
+        't': timeout_sec,
+        'o': output_file,
+        'l': log_file,
+    }
     
     if var_dict['i']:
         for fid in var_dict['i']:
@@ -976,7 +990,7 @@ def main(optional_args=None):
     parser.add_argument('-m', action="store_true", default=False, help='Add spouses and couples information [False]')
     parser.add_argument('-r', action="store_true", default=False, help='Add list of contributors in notes [False]')
     parser.add_argument('-c', action="store_true", default=False, help='Add LDS ordinances (need LDS account) [False]')
-    parser.add_argument("-v", action="store_true", default=False, help="Increase output verbosity [False]")
+    parser.add_argument('-v', action="store_true", default=False, help="Increase output verbosity [False]")
     parser.add_argument('-t', metavar='<INT>', type=int, default=60, help='Timeout in seconds [60]')
     try:
         parser.add_argument('-o', metavar='<FILE>', type=argparse.FileType('w', encoding='UTF-8'), default=sys.stdout, help='output GEDCOM file [stdout]')
@@ -1000,10 +1014,10 @@ def main(optional_args=None):
             return args_dict[var_name]
         except:
             return None
-    
-    var_dict = vars(args)
-    
-    print_gedcom(**var_dict)
+
+    print_gedcom_file(username=args.u, password=args.p, id_list=args.i, ancestors=args.a, descendants=args.d, marriages=args.m,
+                contrib=args.r, ordinances=args.c, verbosity=args.v, timeout_sec=args.t, output_file=args.o, log_file=args.l)
+
             
 if __name__ == '__main__':
     main()
